@@ -4,7 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { supabaseAdmin } from './lib/supabase-admin.js'
 import { registerGetContextoSkill } from './tools/get_contexto_skill.js'
-// import { registerListarSkills } from './tools/listar_skills.js'
+import { registerListarSkills } from './tools/listar_skills.js'
 // import { registerBuscarOportunidades } from './tools/buscar_oportunidades.js'
 // import { registerBuscarVagas } from './tools/buscar_vagas.js'
 // import { registerGetMeuPerfil } from './tools/get_meu_perfil.js'
@@ -23,7 +23,7 @@ const server = new McpServer({
 })
 
 registerGetContextoSkill(server)
-// registerListarSkills(server)
+registerListarSkills(server)
 // registerBuscarOportunidades(server)
 // registerBuscarVagas(server)
 // registerGetMeuPerfil(server)
