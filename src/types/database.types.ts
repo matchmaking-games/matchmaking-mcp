@@ -248,6 +248,39 @@ export type Database = {
           atualizado_em?: string
         }
       }
+      mcp_community_sessions: {
+        Row: {
+          id: string
+          state: string
+          code_challenge: string
+          redirect_uri: string
+          auth_code: string | null
+          user_id: string | null
+          access_token: string | null
+          expires_at: string
+          usado_em: string | null
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          state: string
+          code_challenge: string
+          redirect_uri: string
+          auth_code?: string | null
+          user_id?: string | null
+          access_token?: string | null
+          expires_at: string
+          usado_em?: string | null
+          criado_em?: string
+        }
+        Update: {
+          auth_code?: string | null
+          user_id?: string | null
+          access_token?: string | null
+          expires_at?: string
+          usado_em?: string | null
+        }
+      }
       mcp_skill_config: {
         Row: {
           id: string
