@@ -1,8 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamable-http.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { supabaseAdmin } from './lib/supabase-admin.js'
+import { registerGetContextoSkill } from './tools/get_contexto_skill.js'
+// import { registerListarSkills } from './tools/listar_skills.js'
+// import { registerBuscarOportunidades } from './tools/buscar_oportunidades.js'
+// import { registerBuscarVagas } from './tools/buscar_vagas.js'
+// import { registerGetMeuPerfil } from './tools/get_meu_perfil.js'
+// import { registerBuscarOportunidadesParaMim } from './tools/buscar_oportunidades_para_mim.js'
+// import { registerSubmeterOportunidade } from './tools/submeter_oportunidade.js'
 
 // ---------------------------------------------------------------------------
 // Servidor MCP
@@ -15,16 +22,7 @@ const server = new McpServer({
     'Servidor MCP comunitário da Matchmaking — vagas, editais, eventos e oportunidades para a indústria de games brasileira.',
 })
 
-// Tools registradas aqui à medida que forem implementadas:
-// import { registerGetContextoSkill } from './tools/get_contexto_skill.js'
-// import { registerListarSkills } from './tools/listar_skills.js'
-// import { registerBuscarOportunidades } from './tools/buscar_oportunidades.js'
-// import { registerBuscarVagas } from './tools/buscar_vagas.js'
-// import { registerGetMeuPerfil } from './tools/get_meu_perfil.js'
-// import { registerBuscarOportunidadesParaMim } from './tools/buscar_oportunidades_para_mim.js'
-// import { registerSubmeterOportunidade } from './tools/submeter_oportunidade.js'
-
-// registerGetContextoSkill(server)
+registerGetContextoSkill(server)
 // registerListarSkills(server)
 // registerBuscarOportunidades(server)
 // registerBuscarVagas(server)
@@ -135,10 +133,10 @@ async function handleAuthorize(req: IncomingMessage, res: ServerResponse): Promi
 
 async function handleOAuthCallback(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const body = await lerBody(req)
-  const { state, user_id } = body
+  const { state, user_id, access_token } = body
 
-  if (!state || !user_id) {
-    jsonResponse(res, 400, { error: 'invalid_request', error_description: 'state e user_id são obrigatórios.' })
+  if (!state || !user_id || !access_token) {
+    jsonResponse(res, 400, { error: 'invalid_request', error_description: 'state, user_id e access_token são obrigatórios.' })
     return
   }
 
@@ -160,7 +158,7 @@ async function handleOAuthCallback(req: IncomingMessage, res: ServerResponse): P
 
   await supabaseAdmin
     .from('mcp_community_sessions')
-    .update({ auth_code: authCode, user_id, expires_at: novaExpiracao })
+    .update({ auth_code: authCode, user_id, access_token, expires_at: novaExpiracao })
     .eq('id', sessao.id)
 
   const callbackUrl = new URL(sessao.redirect_uri)
@@ -205,27 +203,21 @@ async function handleToken(req: IncomingMessage, res: ServerResponse): Promise<v
     return
   }
 
-  // Marcar sessão como usada antes de emitir o token (previne replay)
+  if (!sessao.access_token) {
+    jsonResponse(res, 500, { error: 'server_error', error_description: 'Token de acesso ausente na sessão.' })
+    return
+  }
+
+  // Marcar sessão como usada (previne replay)
   await supabaseAdmin
     .from('mcp_community_sessions')
     .update({ usado_em: new Date().toISOString() })
     .eq('id', sessao.id)
 
-  // Gerar sessão Supabase para o usuário via admin API
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createSession({
-    userId: sessao.user_id!,
-  })
-
-  if (authError || !authData.session) {
-    jsonResponse(res, 500, { error: 'server_error', error_description: 'Erro ao gerar sessão.' })
-    return
-  }
-
   jsonResponse(res, 200, {
-    access_token: authData.session.access_token,
+    access_token: sessao.access_token,
     token_type: 'bearer',
     expires_in: 3600,
-    refresh_token: authData.session.refresh_token,
   })
 }
 
@@ -247,27 +239,22 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   const path = urlPath(req)
 
   try {
-    // Endpoints OAuth
     if (req.method === 'GET' && path === '/.well-known/oauth-authorization-server') {
       await handleWellKnown(res)
       return
     }
-
     if (req.method === 'POST' && path === '/register') {
       await handleRegister(req, res)
       return
     }
-
     if (req.method === 'GET' && path === '/authorize') {
       await handleAuthorize(req, res)
       return
     }
-
     if (req.method === 'POST' && path === '/oauth/callback') {
       await handleOAuthCallback(req, res)
       return
     }
-
     if (req.method === 'POST' && path === '/token') {
       await handleToken(req, res)
       return
