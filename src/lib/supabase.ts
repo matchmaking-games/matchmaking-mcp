@@ -10,16 +10,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-/**
- * Cliente público — usa anon key, respeita RLS.
- * Usar para todas as tools públicas (sem autenticação).
- */
+// Cliente público — usa anon key, respeita RLS.
+// Usar para todas as tools públicas (sem autenticação).
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
-/**
- * Cliente autenticado com JWT do usuário.
- * Usar para tools que requerem identidade do usuário logado.
- */
+// Cliente autenticado com JWT do usuário.
+// Usar para tools que requerem identidade do usuário logado.
 export function supabaseAsUser(token: string) {
   return createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
