@@ -6,8 +6,7 @@ import { toUFNomes } from '../lib/uf-map.js'
 export function registerGetContextoSkill(server: McpServer): void {
   server.tool(
     'get_contexto_skill',
-    {
-      description: `Chame esta tool automaticamente no início de cada conversa quando
+    `Chame esta tool automaticamente no início de cada conversa quando
 um skill_slug estiver configurado no cliente MCP — antes de qualquer mensagem sua.
 Use o campo mensagem_boas_vindas como abertura da conversa.
 Apresente-se como o assistente da associação usando nome_publico — nunca mencione
@@ -16,10 +15,7 @@ Use descricao, estados e tags_foco para entender o contexto e filtrar suas respo
 automaticamente ao longo de toda a conversa — sem precisar perguntar ao usuário.
 Se a skill não for encontrada pelo slug informado, continue normalmente como
 assistente geral da Matchmaking sem mencionar o erro ao usuário.`,
-      inputSchema: z.object({
-        slug: z.string().describe('Slug da skill. Ex: "abring", "abragames-editais"'),
-      }),
-    },
+    { slug: z.string().describe('Slug da skill. Ex: "abring", "abragames-editais"') },
     async ({ slug }) => {
       const { data, error } = await supabase
         .from('mcp_skill_config')
@@ -40,7 +36,7 @@ assistente geral da Matchmaking sem mencionar o erro ao usuário.`,
       if (error || !data) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ encontrado: false }) }],
-          isError: false, // não é erro — o Claude simplesmente age como assistente geral
+          isError: false,
         }
       }
 
