@@ -1,0 +1,29 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+
+# Credenciais — NUNCA comitar
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Runtime
+.vercel/
