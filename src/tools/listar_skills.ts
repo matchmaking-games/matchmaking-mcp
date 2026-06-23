@@ -12,6 +12,7 @@ Apresente os resultados de forma conversacional — não liste como uma tabela o
 Para cada skill, mencione o nome, os estados que cobre e os tipos de conteúdo disponíveis.
 Sugira ao usuário perguntar sobre uma skill específica para ver mais detalhes.`,
     {},
+    { title: 'Listar skills disponíveis', readOnlyHint: true },
     async () => {
       const { data, error } = await supabase
         .from('mcp_skill_config')
