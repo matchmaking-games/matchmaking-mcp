@@ -110,7 +110,7 @@ e explique brevemente como o usuário pode ter acesso.`,
         : skillEstados.length > 0 ? skillEstados : null
 
       // Mapa de nomes legíveis para as fontes
-      const fonteNomes: Record<string, string> = {
+      const fonteNomes: Record<string, string | null> = {
         idj: 'Indústria de Jogos',
         gamingera: 'The Gaming Era',
         dropsdejogos: 'Drops de Jogos',
