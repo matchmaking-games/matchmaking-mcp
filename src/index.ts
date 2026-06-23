@@ -266,7 +266,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     // MCP transport — nova instância por request para evitar "Already connected"
     const server = createMcpServer()
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
+      sessionIdGenerator: undefined,
     })
     await server.connect(transport)
     await transport.handleRequest(req, res)
