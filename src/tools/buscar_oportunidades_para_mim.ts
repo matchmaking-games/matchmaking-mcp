@@ -184,7 +184,7 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
             empresa: null,
             descricao: null,
             url: null,
-            fonte: null,
+            fonte: null as string | null,
             fonte_nome: null as string | null,
             tags: [],
             expira_em: null,
