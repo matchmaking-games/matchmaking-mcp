@@ -13,7 +13,11 @@ Se o usuário estiver autenticado, usa automaticamente seu estado, habilidades e
 cadastradas na Matchmaking — sem precisar perguntar nada.
 Se não estiver autenticado, usa o contexto anônimo fornecido como filtro.
 Apresente os resultados de forma conversacional, destacando por que cada oportunidade
-é relevante para o perfil do usuário. Nunca retorne JSON bruto ao usuário.
+é relevante para o perfil do usuário. Para cada item, sempre inclua:
+- Título com o link original (campo url) em formato clicável
+- Fonte da informação no formato "Via [fonte]" (campo fonte_nome), ex: "Via Indústria de Jogos"
+- Prazo quando disponível
+Nunca omita o link ou a fonte quando disponíveis. Nunca retorne JSON bruto ao usuário.
 Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar os critérios.`,
     {
       skill_slug: z.string().optional().describe('Slug da skill ativa para filtrar por organização'),
@@ -99,7 +103,7 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
       // Construir query de oportunidades
       let q = supabase
         .from('newsletter_itens')
-        .select('id, tipo, titulo, empresa, descricao, url, tags, expira_em, exclusivo_associados, ref_organizacao_id')
+        .select('id, tipo, titulo, empresa, descricao, url, fonte, tags, expira_em, exclusivo_associados, ref_organizacao_id')
         .eq('status', 'aprovado')
         .or('expira_em.is.null,expira_em.gt.' + new Date().toISOString())
         .order('publicado_em', { ascending: false })
@@ -118,9 +122,26 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
         }
       }
 
+      // Mapa de nomes legíveis para as fontes
+      const fonteNomes: Record<string, string> = {
+        idj: 'Indústria de Jogos',
+        gamingera: 'The Gaming Era',
+        dropsdejogos: 'Drops de Jogos',
+        gogamers: 'GoGamers',
+        itchio: 'itch.io',
+        abragames: 'ABRAGAMES',
+        linkedin: 'LinkedIn',
+        workable: 'Workable',
+        plataforma_vaga: 'Matchmaking',
+        plataforma_parceria: 'Matchmaking',
+        rss: null,
+      }
+
       // Processar exclusividade
       const resultados = await Promise.all(
         data.map(async (item) => {
+          const fonteNome = fonteNomes[item.fonte] ?? item.fonte ?? null
+
           if (!item.exclusivo_associados) {
             return {
               id: item.id,
@@ -129,6 +150,8 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
               empresa: item.empresa ?? null,
               descricao: item.descricao ? item.descricao.substring(0, 300) : null,
               url: item.url,
+              fonte: item.fonte ?? null,
+              fonte_nome: fonteNome,
               tags: item.tags ?? [],
               expira_em: item.expira_em ?? null,
               exclusivo: false,
@@ -145,6 +168,8 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
                 empresa: item.empresa ?? null,
                 descricao: item.descricao ? item.descricao.substring(0, 300) : null,
                 url: item.url,
+                fonte: item.fonte ?? null,
+                fonte_nome: fonteNome,
                 tags: item.tags ?? [],
                 expira_em: item.expira_em ?? null,
                 exclusivo: true,
@@ -159,6 +184,8 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
             empresa: null,
             descricao: null,
             url: null,
+            fonte: null,
+            fonte_nome: null,
             tags: [],
             expira_em: null,
             exclusivo: true,
