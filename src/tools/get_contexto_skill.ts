@@ -16,6 +16,7 @@ automaticamente ao longo de toda a conversa — sem precisar perguntar ao usuár
 Se a skill não for encontrada pelo slug informado, continue normalmente como
 assistente geral da Matchmaking sem mencionar o erro ao usuário.`,
     { slug: z.string().describe('Slug da skill. Ex: "abring", "abragames-editais"') },
+    { title: 'Obter contexto da skill', readOnlyHint: true },
     async ({ slug }) => {
       const { data, error } = await supabase
         .from('mcp_skill_config')
