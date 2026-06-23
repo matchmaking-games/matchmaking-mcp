@@ -12,25 +12,6 @@ import { registerBuscarOportunidadesParaMim } from './tools/buscar_oportunidades
 import { registerSubmeterOportunidade } from './tools/submeter_oportunidade.js'
 
 // ---------------------------------------------------------------------------
-// Servidor MCP
-// ---------------------------------------------------------------------------
-
-const server = new McpServer({
-  name: 'matchmaking-community-mcp',
-  version: '0.1.0',
-  description:
-    'Servidor MCP comunitário da Matchmaking — vagas, editais, eventos e oportunidades para a indústria de games brasileira.',
-})
-
-registerGetContextoSkill(server)
-registerListarSkills(server)
-registerBuscarOportunidades(server)
-registerBuscarVagas(server)
-registerGetMeuPerfil(server)
-registerBuscarOportunidadesParaMim(server)
-registerSubmeterOportunidade(server)
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -67,6 +48,29 @@ function lerBody(req: IncomingMessage): Promise<Record<string, string>> {
 
 function urlPath(req: IncomingMessage): string {
   return (req.url ?? '/').split('?')[0]
+}
+
+// ---------------------------------------------------------------------------
+// Factory: cria nova instância do McpServer por request
+// ---------------------------------------------------------------------------
+
+function createMcpServer(): McpServer {
+  const server = new McpServer({
+    name: 'matchmaking-community-mcp',
+    version: '0.1.0',
+    description:
+      'Servidor MCP comunitário da Matchmaking — vagas, editais, eventos e oportunidades para a indústria de games brasileira.',
+  })
+
+  registerGetContextoSkill(server)
+  registerListarSkills(server)
+  registerBuscarOportunidades(server)
+  registerBuscarVagas(server)
+  registerGetMeuPerfil(server)
+  registerBuscarOportunidadesParaMim(server)
+  registerSubmeterOportunidade(server)
+
+  return server
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +121,7 @@ async function handleAuthorize(req: IncomingMessage, res: ServerResponse): Promi
     .insert({ state, code_challenge: codeChallenge, redirect_uri: redirectUri, expires_at: expiresAt })
 
   if (error) {
+    console.error('Erro ao inserir sessão OAuth:', error)
     jsonResponse(res, 500, { error: 'server_error', error_description: 'Erro ao iniciar sessão.' })
     return
   }
@@ -196,7 +201,6 @@ async function handleToken(req: IncomingMessage, res: ServerResponse): Promise<v
     return
   }
 
-  // Validar PKCE: base64url(SHA256(code_verifier)) deve bater com code_challenge salvo
   const hash = createHash('sha256').update(code_verifier).digest('base64url')
   if (hash !== sessao.code_challenge) {
     jsonResponse(res, 400, { error: 'invalid_grant', error_description: 'Verificação PKCE falhou.' })
@@ -208,7 +212,6 @@ async function handleToken(req: IncomingMessage, res: ServerResponse): Promise<v
     return
   }
 
-  // Marcar sessão como usada (previne replay)
   await supabaseAdmin
     .from('mcp_community_sessions')
     .update({ usado_em: new Date().toISOString() })
@@ -260,7 +263,8 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       return
     }
 
-    // MCP transport (tools)
+    // MCP transport — nova instância por request para evitar "Already connected"
+    const server = createMcpServer()
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     })
