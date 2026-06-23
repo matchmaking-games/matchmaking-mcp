@@ -185,7 +185,7 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
             descricao: null,
             url: null,
             fonte: null,
-            fonte_nome: null,
+            fonte_nome: null as string | null,
             tags: [],
             expira_em: null,
             exclusivo: true,
