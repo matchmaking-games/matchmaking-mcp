@@ -40,6 +40,7 @@ explique o motivo de forma clara e direcione para matchmaking.games.`,
       estados: z.array(z.string()).optional().describe('Estados relacionados — aceita nome completo ou sigla'),
       expira_em: z.string().optional().describe('Data de expiração em formato ISO 8601'),
     },
+    { title: 'Submeter oportunidade', destructiveHint: true },
     async ({ titulo, tipo, url, descricao, empresa, tags, estados, expira_em }, extra) => {
       // Extrair JWT
       const headers = extra?.requestInfo?.headers as Record<string, string> | undefined
