@@ -11,8 +11,12 @@ export function registerBuscarOportunidades(server: McpServer): void {
 Use esta tool sempre que o usuário pedir oportunidades, editais, eventos ou quiser saber o que
 está disponível no ecossistema de games do Brasil.
 Filtre automaticamente por estados e tipos de conteúdo configurados na skill ativa, sem perguntar.
-Apresente os resultados de forma conversacional — mencione título, empresa/organização, link e prazo
-quando disponíveis. Nunca retorne JSON bruto ao usuário.
+Apresente os resultados de forma conversacional — para cada item, sempre inclua:
+- Título com o link original (campo url) em formato clicável
+- Fonte da informação no formato "Via [fonte]" (campo fonte), ex: "Via Indústria de Jogos"
+- Empresa/organização quando disponível
+- Prazo quando disponível
+Nunca omita o link ou a fonte quando disponíveis. Nunca retorne JSON bruto ao usuário.
 Quando não houver resultados, sugira ampliar os filtros ou verificar em breve pois o conteúdo
 é atualizado regularmente.
 Para itens exclusivos sem acesso, mencione que existem oportunidades exclusivas para associados
@@ -61,7 +65,7 @@ e explique brevemente como o usuário pode ter acesso.`,
       // Construir query base
       let q = supabase
         .from('newsletter_itens')
-        .select('id, tipo, titulo, empresa, descricao, url, tags, expira_em, exclusivo_associados, ref_organizacao_id')
+        .select('id, tipo, titulo, empresa, descricao, url, fonte, tags, expira_em, exclusivo_associados, ref_organizacao_id')
         .eq('status', 'aprovado')
         .order('publicado_em', { ascending: false })
         .limit(20)
@@ -105,9 +109,26 @@ e explique brevemente como o usuário pode ter acesso.`,
         ? estados.map((e) => toUFSigla(e)).filter((s): s is string => s !== null)
         : skillEstados.length > 0 ? skillEstados : null
 
+      // Mapa de nomes legíveis para as fontes
+      const fonteNomes: Record<string, string> = {
+        idj: 'Indústria de Jogos',
+        gamingera: 'The Gaming Era',
+        dropsdejogos: 'Drops de Jogos',
+        gogamers: 'GoGamers',
+        itchio: 'itch.io',
+        abragames: 'ABRAGAMES',
+        linkedin: 'LinkedIn',
+        workable: 'Workable',
+        plataforma_vaga: 'Matchmaking',
+        plataforma_parceria: 'Matchmaking',
+        rss: null,
+      }
+
       // Processar exclusividade e montar resultado
       const resultados = await Promise.all(
         data.map(async (item) => {
+          const fonteNome = fonteNomes[item.fonte] ?? item.fonte ?? null
+
           if (!item.exclusivo_associados) {
             return {
               id: item.id,
@@ -116,6 +137,8 @@ e explique brevemente como o usuário pode ter acesso.`,
               empresa: item.empresa ?? null,
               descricao: item.descricao ? item.descricao.substring(0, 300) : null,
               url: item.url,
+              fonte: item.fonte ?? null,
+              fonte_nome: fonteNome,
               tags: item.tags ?? [],
               expira_em: item.expira_em ?? null,
               exclusivo: false,
@@ -133,6 +156,8 @@ e explique brevemente como o usuário pode ter acesso.`,
                 empresa: item.empresa ?? null,
                 descricao: item.descricao ? item.descricao.substring(0, 300) : null,
                 url: item.url,
+                fonte: item.fonte ?? null,
+                fonte_nome: fonteNome,
                 tags: item.tags ?? [],
                 expira_em: item.expira_em ?? null,
                 exclusivo: true,
@@ -148,6 +173,8 @@ e explique brevemente como o usuário pode ter acesso.`,
             empresa: null,
             descricao: null,
             url: null,
+            fonte: null,
+            fonte_nome: null,
             tags: [],
             expira_em: null,
             exclusivo: true,
