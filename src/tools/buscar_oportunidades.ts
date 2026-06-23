@@ -25,6 +25,7 @@ e explique brevemente como o usuário pode ter acesso.`,
       query: z.string().optional().describe('Busca por texto livre no título'),
       apenas_vigentes: z.boolean().optional().default(true).describe('Se true, retorna apenas itens não expirados'),
     },
+    { title: 'Buscar oportunidades', readOnlyHint: true },
     async ({ skill_slug, tipo, estados, tags, query, apenas_vigentes }, extra) => {
       // Extrair token e user_id se autenticado
       const headers = extra?.requestInfo?.headers as Record<string, string> | undefined
