@@ -24,6 +24,7 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
         tags: z.array(z.string()).optional(),
       }).optional().describe('Usado apenas quando o usuário não está autenticado'),
     },
+    { title: 'Buscar oportunidades para mim', readOnlyHint: true },
     async ({ skill_slug, tipo, contexto_anonimo }, extra) => {
       // Extrair token
       const headers = extra?.requestInfo?.headers as Record<string, string> | undefined
