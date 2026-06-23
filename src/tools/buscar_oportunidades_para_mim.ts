@@ -123,7 +123,7 @@ Quando não houver resultados compatíveis, sugira atualizar o perfil ou ampliar
       }
 
       // Mapa de nomes legíveis para as fontes
-      const fonteNomes: Record<string, string> = {
+      const fonteNomes: Record<string, string | null> = {
         idj: 'Indústria de Jogos',
         gamingera: 'The Gaming Era',
         dropsdejogos: 'Drops de Jogos',
