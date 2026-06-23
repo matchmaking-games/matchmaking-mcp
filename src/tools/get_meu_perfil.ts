@@ -20,6 +20,7 @@ Apresente as informações de forma conversacional e humanizada — não liste c
 Nunca expor email, telefone ou qualquer dado de contato privado do usuário.
 Se o usuário não estiver autenticado, oriente-o a fazer login em matchmaking.games.`,
     {},
+    { title: 'Ver meu perfil', readOnlyHint: true },
     async (_args, extra) => {
       // Extrair JWT do header
       const headers = extra?.requestInfo?.headers as Record<string, string> | undefined
