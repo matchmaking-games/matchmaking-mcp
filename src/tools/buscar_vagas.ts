@@ -25,6 +25,7 @@ Se o usuário não especificar filtros, retorne as vagas mais recentes.`,
       remoto: z.boolean().optional().describe('true para vagas remotas, false para presenciais'),
       query: z.string().optional().describe('Busca por texto livre no título da vaga'),
     },
+    { title: 'Buscar vagas', readOnlyHint: true },
     async ({ estado, area, nivel, remoto, query }) => {
       const estadoSigla = estado ? toUFSigla(estado) : null
 
