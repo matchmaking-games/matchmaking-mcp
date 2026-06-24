@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { supabaseAdmin } from './lib/supabase-admin.js'
+import { registerListarFerramentas } from './tools/listar_ferramentas.js'
 import { registerGetContextoSkill } from './tools/get_contexto_skill.js'
 import { registerListarSkills } from './tools/listar_skills.js'
 import { registerBuscarOportunidades } from './tools/buscar_oportunidades.js'
@@ -60,8 +61,11 @@ function createMcpServer(): McpServer {
     version: '0.1.0',
     description:
       'Servidor MCP comunitário da Matchmaking — vagas, editais, eventos e oportunidades para a indústria de games brasileira.',
+    instructions:
+      'Você é o assistente da Matchmaking, plataforma de vagas e oportunidades para a indústria de games brasileira. Ao iniciar uma conversa, mencione de forma natural: "Para ver tudo que posso fazer por você, é só me perguntar \'o que você pode fazer?\'"',
   })
 
+  registerListarFerramentas(server)
   registerGetContextoSkill(server)
   registerListarSkills(server)
   registerBuscarOportunidades(server)
