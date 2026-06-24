@@ -18,6 +18,44 @@ function erroPermissao(mensagem: string) {
   }
 }
 
+function erroUrl(mensagem: string) {
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify({ sucesso: false, erro: mensagem }) }],
+    isError: true,
+  }
+}
+
+function validarUrl(url: string): string | null {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return 'URL inválida. Verifique o formato do link.'
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    return 'URL inválida. Use apenas links http ou https.'
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+
+  const hostsInternos = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254', '::1']
+  if (hostsInternos.includes(hostname)) {
+    return 'URL inválida. Links para redes internas não são permitidos.'
+  }
+
+  if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+    return 'URL inválida. Links para redes internas não são permitidos.'
+  }
+
+  const ipPrivado = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(hostname)
+  if (ipPrivado) {
+    return 'URL inválida. Links para redes internas não são permitidos.'
+  }
+
+  return null // null = válida
+}
+
 export function registerSubmeterOportunidade(server: McpServer): void {
   server.tool(
     'submeter_oportunidade',
@@ -83,6 +121,12 @@ explique o motivo de forma clara e direcione para matchmaking.games.`,
       }
 
       const organizacaoId = skills[0].organizacao_id
+
+      // Validar URL — bloquear protocolos inválidos e hosts internos
+      const erroDeUrl = validarUrl(url)
+      if (erroDeUrl) {
+        return erroUrl(erroDeUrl)
+      }
 
       // Normalizar estados para siglas
       const tagsFinal = [...(tags ?? [])]
