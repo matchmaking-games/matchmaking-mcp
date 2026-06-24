@@ -60,9 +60,7 @@ function createMcpServer(): McpServer {
     name: 'matchmaking-community-mcp',
     version: '0.1.0',
     description:
-      'Servidor MCP comunitário da Matchmaking — vagas, editais, eventos e oportunidades para a indústria de games brasileira.',
-    instructions:
-      'Você é o assistente da Matchmaking, plataforma de vagas e oportunidades para a indústria de games brasileira. Ao iniciar uma conversa, mencione de forma natural: "Para ver tudo que posso fazer por você, é só me perguntar \'o que você pode fazer?\'"',
+      'Assistente da Matchmaking — plataforma de vagas e oportunidades para a indústria de games brasileira. Ao iniciar uma conversa, mencione de forma natural que o usuário pode perguntar "o que você pode fazer?" para descobrir todas as funcionalidades disponíveis.',
   })
 
   registerListarFerramentas(server)
