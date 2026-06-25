@@ -132,7 +132,7 @@ ou ampliar os critérios de busca.`,
         if (skill) {
           orgIds = [skill.organizacao_id]
           skillTipos = (skill.tipos_conteudo ?? []).filter(
-            (t): t is TipoOportunidade => TIPOS_OPORTUNIDADE.includes(t as TipoOportunidade)
+            (t: string): t is TipoOportunidade => TIPOS_OPORTUNIDADE.includes(t as TipoOportunidade)
           )
         }
       }
