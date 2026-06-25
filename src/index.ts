@@ -11,6 +11,7 @@ import { registerBuscarVagas } from './tools/buscar_vagas.js'
 import { registerGetMeuPerfil } from './tools/get_meu_perfil.js'
 import { registerBuscarOportunidadesParaMim } from './tools/buscar_oportunidades_para_mim.js'
 import { registerSubmeterOportunidade } from './tools/submeter_oportunidade.js'
+import { registerBuscarVagasParaMim } from './tools/buscar_vagas_para_mim.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,6 +72,7 @@ function createMcpServer(): McpServer {
   registerGetMeuPerfil(server)
   registerBuscarOportunidadesParaMim(server)
   registerSubmeterOportunidade(server)
+  registerBuscarVagasParaMim(server)
 
   return server
 }
