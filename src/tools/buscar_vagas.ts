@@ -145,14 +145,14 @@ resultados personalizados com base no perfil dele.`,
         .filter((item) => {
           // Filtro por área via tags
           if (area) {
-            const temArea = (item.tags ?? []).some((tag) =>
+            const temArea = (item.tags ?? []).some((tag: string) =>
               tag.toLowerCase().includes(area.toLowerCase())
             )
             if (!temArea) return false
           }
           // Filtro por estado via tags (aproximado)
           if (estadoSigla) {
-            const temEstado = (item.tags ?? []).some((tag) =>
+            const temEstado = (item.tags ?? []).some((tag: string) =>
               tag.toUpperCase() === estadoSigla
             )
             if (!temEstado) return false
