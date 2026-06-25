@@ -77,7 +77,7 @@ para resultados personalizados pelo perfil.`,
           skillEstados = skill.estados ?? []
           // Filtrar apenas tipos válidos (excluir 'vaga' se vier da skill config)
           skillTipos = (skill.tipos_conteudo ?? []).filter(
-            (t): t is TipoOportunidade => TIPOS_OPORTUNIDADE.includes(t as TipoOportunidade)
+            (t: string): t is TipoOportunidade => TIPOS_OPORTUNIDADE.includes(t as TipoOportunidade)
           )
         }
       }
