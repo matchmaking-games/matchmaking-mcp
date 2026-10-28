@@ -1,79 +1,79 @@
 # Como Contribuir
 
-Obrigado pelo interesse em contribuir com o Matchmaking MCP. Este documento explica como funciona o processo de contribuição, quais tipos de contribuição existem e o que esperar em cada etapa.
+Obrigado pelo interesse em contribuir com o Matchmaking MCP. Este documento explica os tipos de contribuição e o que esperar em cada etapa.
 
 ---
 
 ## Tipos de contribuição
 
-Existem dois tipos de contribuição com processos distintos.
+### 1. Leitores de fonte
 
-### 1. Contribuição técnica (código)
+A contribuição mais valiosa. Um leitor de fonte busca as oportunidades de um lugar (o portal de editais de um estado, a agenda de uma associação, o sistema de vagas de um estúdio) e as entrega no contrato mínimo do índice. Cada leitor novo abre uma caixa para toda uma região.
 
-Inclui novas ferramentas (tools), correções de bugs, melhorias de performance, documentação técnica e testes.
+Leitores rodam com o mínimo de permissão: leem a fonte e gravam apenas itens brutos, nunca dados de pessoas.
 
-**Processo:**
+*O guia com modelo pronto para escrever um leitor será publicado junto com a primeira versão do índice.*
 
-1. Abra uma [Discussion](../../discussions) descrevendo o que você quer construir antes de escrever código. Isso evita trabalho duplicado e garante alinhamento com a direção do projeto.
-2. Aguarde feedback. O mantenedor principal ou um Revisor Técnico vai responder com aprovação, ajustes na proposta ou explicação de por que não faz sentido no momento.
-3. Com a proposta aprovada, faça um fork do repositório e abra um Pull Request com sua implementação.
-4. O PR será revisado por um Revisor Técnico, que dará parecer sobre qualidade e segurança.
-5. A aprovação final e o merge são feitos pelo mantenedor principal.
+### 2. Código do servidor
 
-**Critérios de aceitação de código:**
-- Escrito em TypeScript, sem `@ts-nocheck` e sem `as any`
-- Sem dependências externas não justificadas em Discussion prévia
-- Tools novas devem seguir o guia em [docs/conversational-guide.md](docs/conversational-guide.md)
-- Nenhuma credencial ou dado sensível no código
-- CI passando (typecheck + lint)
+Melhorias nas ferramentas do MCP, correções, testes e documentação técnica.
 
-### 2. Contribuição de conteúdo (editais, eventos, oportunidades)
+### 3. Conteúdo
 
-Inclui submissão de editais de fomento, eventos, game jams e oportunidades regionais para a base de dados.
+Indicar fontes e oportunidades. Todo conteúdo passa pelas checagens automáticas de qualidade e, enquanto a fonte estiver em observação, por moderação.
 
-**Processo:**
+### 4. Moderação
 
-1. Acesse o painel de curadoria em [matchmaking.games/curadoria](https://matchmaking.games/curadoria) com sua conta Matchmaking.
-2. Preencha o formulário com título, descrição, link oficial, tipo, região e data de validade.
-3. O conteúdo entra com status `pendente` e não aparece publicamente até aprovação.
-4. Um Revisor de Conteúdo valida a legitimidade da fonte e a relevância para o ecossistema.
-5. A aprovação final é feita pelo mantenedor principal ou por um Revisor de Conteúdo autorizado.
+Moderadores voluntários, por exemplo um por associação parceira, cuidam das oportunidades da sua região. O convite é feito pelo mantenedor principal.
 
-**Critérios de aceitação de conteúdo:**
-- Fonte verificável e link oficial funcionando
-- Relevante para profissionais ou estúdios da indústria de games
-- Dentro do prazo de validade
-- Sem conteúdo promocional disfarçado de oportunidade
-- Sem links encurtados ou redirecionamentos suspeitos
+---
+
+## Processo para código
+
+1. Abra uma [Discussion](../../discussions) descrevendo o que você quer construir antes de escrever código. Correções de bug e documentação podem ir direto para o PR.
+2. Com a proposta alinhada, faça um fork e abra um Pull Request para a branch `next`.
+3. Os testes automáticos rodam em todo PR e precisam passar.
+4. O PR passa por revisão em três camadas: testes automáticos, revisão do mantenedor com apoio de IA e um revisor técnico externo.
+5. A aprovação final e o merge são do mantenedor principal.
+
+**Critérios de aceitação:**
+- TypeScript estrito, sem `@ts-nocheck` e sem `as any`
+- Testes para o que mudou
+- Dados vindos de fora validados com Zod
+- Sem dependências novas não justificadas na Discussion
+- Conteúdo de fontes externas é tratado como dado, nunca como instrução para o assistente
+
+**Regras para o banco (`supabase/`):**
+- Toda tabela nova tem RLS ligado e GRANTs explícitos para `anon` e `authenticated`
+- Funções `SECURITY DEFINER` usam `SET search_path = ''` e nomes completos (`schema.tabela`)
+- `ALTER TYPE ... ADD VALUE` fica numa migration própria
 
 ---
 
 ## Papéis
 
-**Mantenedor principal** — Lucas Pimenta. Responsável pela direção do projeto, aprovações finais e merges. Palavra final em qualquer decisão.
+**Mantenedor principal**: Lucas Pimenta. Direção do projeto, aprovações finais e merges.
 
-**Revisor Técnico** — Desenvolvedor convidado com experiência comprovada. Faz triagem e análise de Pull Requests de código. Emite parecer técnico, mas não tem poder de merge. O convite é feito pelo mantenedor principal com base em contribuições consistentes e demonstradas.
+**Revisor técnico**: desenvolvedor experiente convidado. Analisa PRs de código e dá parecer sobre qualidade e segurança, sem poder de merge.
 
-**Revisor de Conteúdo** — Representante de associação parceira ou membro reconhecido da comunidade. Valida submissões de editais, eventos e oportunidades. Emite parecer de legitimidade, mas não publica diretamente. O convite é feito pelo mantenedor principal.
+**Moderador**: representante de associação parceira ou membro reconhecido da comunidade. Valida fontes e oportunidades da sua região.
 
 ---
 
 ## O que não aceitamos
 
-- Ferramentas que escrevam ou deletem dados sem autorização explícita do mantenedor
-- Conteúdo que não seja diretamente relacionado à indústria de games
-- Pull Requests sem Discussion prévia aprovada (exceto bugfixes e documentação)
-- Código que introduza dependências de serviços pagos sem discussão
-- Qualquer forma de coleta de dados pessoais não prevista na arquitetura existente
-- `@ts-nocheck` ou `as any` — o projeto mantém tipagem completa via `database.types.ts`
+- Ferramentas que gravem dados sem confirmação da pessoa
+- Conteúdo que não seja do setor de games
+- Coleta de dados pessoais fora do que a arquitetura prevê
+- Código que dependa de serviços pagos sem discussão prévia
 
 ---
 
 ## Regras inegociáveis
 
 - Nunca inclua credenciais, IDs de projeto, tokens ou qualquer segredo no código
-- Nunca hardcode URLs de ambiente (dev, staging, prod) — use variáveis de ambiente
-- O arquivo `.env` nunca deve ser commitado
+- Nunca fixe URLs de ambiente no código; use variáveis de ambiente
+- O arquivo `.env` nunca é comitado
 
 ---
 

@@ -4,18 +4,19 @@
 
 ## Tipo de mudança
 
-- [ ] Bugfix
-- [ ] Nova tool
-- [ ] Melhoria de performance
+- [ ] Leitor de fonte
+- [ ] Ferramenta do MCP
+- [ ] Banco (migration ou função)
+- [ ] Correção de bug
 - [ ] Documentação
 - [ ] Outro (descreva):
 
 ## Checklist
 
-- [ ] Abri uma Discussion antes deste PR (obrigatório para features novas)
-- [ ] O CI está passando (typecheck + lint)
+- [ ] Abri uma Discussion antes deste PR (obrigatório para recursos novos)
+- [ ] Os testes automáticos estão passando
+- [ ] Incluí testes para o que mudou
 - [ ] Não incluí credenciais, IDs de projeto ou segredos de nenhum ambiente
-- [ ] Testei localmente com o MCP Inspector
 - [ ] Atualizei a documentação relevante (se aplicável)
 
 ## Discussion relacionada

@@ -10,7 +10,7 @@ O projeto opera sob o modelo **BDFL** (Benevolent Dictator For Life). O mantened
 
 Isso não significa que contribuições e opiniões não importam — significa que há clareza sobre quem é responsável e quem decide quando há discordância.
 
-**Mantenedor principal:** Lucas Pimenta ([@lucaspimenta](https://github.com/lucaspimenta))
+**Mantenedor principal:** Lucas Pimenta
 
 ---
 
@@ -28,10 +28,10 @@ Como se torna um Revisor Técnico: contribuições consistentes e de qualidade a
 
 O papel pode ser retirado pelo mantenedor principal se o Revisor ficar inativo por mais de 6 meses ou se houver violação do Código de Conduta.
 
-### Revisor de Conteúdo
-Responsabilidades: validação de editais, eventos e oportunidades submetidos por terceiros, parecer sobre legitimidade e relevância.
+### Moderador
+Responsabilidades: validação das fontes e oportunidades da sua região, enquanto estiverem em observação, e parecer sobre legitimidade e relevância.
 
-Como se torna um Revisor de Conteúdo: representação de uma associação parceira ativa ou reconhecimento pela comunidade, seguido de convite direto do mantenedor principal.
+Como se torna um Moderador: representação de uma associação parceira ativa ou reconhecimento pela comunidade, seguido de convite direto do mantenedor principal.
 
 As mesmas regras de inatividade e conduta se aplicam.
 
@@ -39,7 +39,7 @@ As mesmas regras de inatividade e conduta se aplicam.
 
 ## Como decisões são tomadas
 
-**Decisões rotineiras** (aprovação de conteúdo, merge de PRs pequenos, correções de bugs) — feitas pelo mantenedor principal ou revisores dentro de seus escopos, sem necessidade de discussão pública.
+**Decisões rotineiras** (moderação de conteúdo, merge de PRs pequenos, correções de bugs) — feitas pelo mantenedor principal ou revisores dentro de seus escopos, sem necessidade de discussão pública.
 
 **Decisões de direção** (novas features significativas, mudanças na arquitetura, adição de dependências, mudanças na licença) — o mantenedor principal abre uma Discussion pública, coleta opiniões por no mínimo 7 dias e então decide. A decisão final é documentada na própria Discussion.
 
@@ -69,4 +69,4 @@ Relatos de conduta podem ser enviados de forma privada para: lucas.pimenta@match
 
 | Data | Mudança |
 |---|---|
-| 2026-06 | Versão inicial — modelo BDFL com dois papéis de revisor |
+| 2026-10 | Versão inicial: modelo BDFL com revisor técnico e moderadores |
