@@ -27,3 +27,14 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+
+  banco:
+    name: Banco (regras das migrations)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test scripts/*.test.mjs
+      - run: node scripts/verificar-migrations.mjs supabase/migrations
