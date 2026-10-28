@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 // Schemas em que este repositório pode criar e alterar objetos.
-export const SCHEMAS_PERMITIDOS = ['oportunidades']
+export const SCHEMAS_PERMITIDOS = ['oportunidades', 'vitrine']
 
 const NOME_ARQUIVO = /^\d{14}_[a-z0-9_]+\.sql$/
 const NOME = String.raw`(?:"[^"]+"|[a-z_][a-z0-9_$]*)(?:\.(?:"[^"]+"|[a-z_][a-z0-9_$]*))*`
