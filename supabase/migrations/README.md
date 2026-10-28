@@ -12,4 +12,4 @@ Regras para toda migration:
 - Nenhuma tabela do site é alterada por este repositório.
 
 O verificador `scripts/verificar-migrations.mjs` confere essas regras em todo PR e
-recusa comandos fora do schema `oportunidades`.
+recusa comandos fora dos schemas `oportunidades` e `vitrine`.
