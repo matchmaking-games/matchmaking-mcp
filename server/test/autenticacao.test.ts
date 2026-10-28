@@ -29,6 +29,14 @@ describe('lerUsuarioDosClaims', () => {
     expect(lerUsuarioDosClaims({ ...claims, is_anonymous: false }, EMISSOR)?.visitante).toBe(false)
   })
 
+  it('reconhece o visitante pelo método de login quando is_anonymous não vem', () => {
+    const semMarcador = { ...claims, is_anonymous: undefined }
+
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'anonymous', timestamp: 1 }] }, EMISSOR)?.visitante).toBe(true)
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: ['anonymous'] }, EMISSOR)?.visitante).toBe(true)
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'password', timestamp: 1 }] }, EMISSOR)?.visitante).toBe(false)
+  })
+
   const recusados: Array<[string, Record<string, unknown>]> = [
     ['sem client_id (sessão do site)', { client_id: undefined }],
     ['de outro emissor', { iss: 'https://outro.supabase.co/auth/v1' }],
