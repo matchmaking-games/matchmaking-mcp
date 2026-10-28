@@ -23,15 +23,18 @@ const claimsSchema = z.object({
   // Assim, uma sessão do site nunca serve de acesso ao MCP.
   client_id: z.string().min(1),
   is_anonymous: z.boolean().optional(),
+  // Métodos de login usados na sessão; o visitante entra pelo método "anonymous".
+  amr: z.array(z.union([z.string(), z.object({ method: z.string() })])).optional(),
   scope: z.string().optional(),
 })
 
 export function lerUsuarioDosClaims(claims: unknown, emissor: string): Usuario | null {
   const lido = claimsSchema.safeParse(claims)
   if (!lido.success || lido.data.iss !== emissor) return null
+  const metodos = (lido.data.amr ?? []).map((entrada) => (typeof entrada === 'string' ? entrada : entrada.method))
   return {
     id: lido.data.sub,
-    visitante: lido.data.is_anonymous === true,
+    visitante: lido.data.is_anonymous === true || metodos.includes('anonymous'),
     clientId: lido.data.client_id,
     escopos: (lido.data.scope ?? '').split(' ').filter((escopo) => escopo.length > 0),
     expiraEm: lido.data.exp,
