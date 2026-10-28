@@ -10,3 +10,6 @@ Regras para toda migration:
 - Funções `SECURITY DEFINER`: `SET search_path = ''` e nomes completos (`schema.tabela`).
 - `ALTER TYPE ... ADD VALUE` sempre numa migration própria.
 - Nenhuma tabela do site é alterada por este repositório.
+
+O verificador `scripts/verificar-migrations.mjs` confere essas regras em todo PR e
+recusa comandos fora do schema `oportunidades`.
