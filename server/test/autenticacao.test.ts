@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extrairToken, lerUsuarioDosClaims } from '../src/autenticacao.js'
+import { criarVerificador, extrairToken, lerUsuarioDosClaims } from '../src/autenticacao.js'
 import { ErroConfiguracao, emissorDoSupabase, lerConfiguracao } from '../src/config.js'
 
 const EMISSOR = 'https://exemplo.supabase.co/auth/v1'
@@ -38,6 +38,25 @@ describe('lerUsuarioDosClaims', () => {
 
   it.each(recusados)('recusa acesso %s', (_caso, mudanca) => {
     expect(lerUsuarioDosClaims({ ...claims, ...mudanca }, EMISSOR)).toBeNull()
+  })
+})
+
+describe('criarVerificador', () => {
+  it('aceita um acesso conferido', async () => {
+    const verificar = criarVerificador(async () => claims, EMISSOR)
+    expect((await verificar('token'))?.clientId).toBe('cliente-1')
+  })
+
+  it('trata acesso recusado pelo Supabase como inválido', async () => {
+    const verificar = criarVerificador(async () => null, EMISSOR)
+    expect(await verificar('token')).toBeNull()
+  })
+
+  it('trata acesso malformado, que faz o Supabase lançar erro, como inválido', async () => {
+    const verificar = criarVerificador(async () => {
+      throw new SyntaxError('Unexpected token')
+    }, EMISSOR)
+    expect(await verificar('abc.def.ghi')).toBeNull()
   })
 })
 
