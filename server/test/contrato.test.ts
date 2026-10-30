@@ -67,10 +67,15 @@ describe('contrato e banco falam a mesma língua', () => {
     .map((arquivo) => readFileSync(join(pasta, arquivo), 'utf8'))
     .join('\n')
 
+  // Valores criados com o tipo e os acrescentados depois com ALTER TYPE ... ADD VALUE.
   function valoresDoEnum(nome: string): string[] {
     const encontrado = new RegExp(String.raw`create type oportunidades\.${nome} as enum \(([^)]*)\)`).exec(sql)
     if (!encontrado?.[1]) throw new Error(`enum ${nome} não encontrado nas migrations`)
-    return [...encontrado[1].matchAll(/'([^']+)'/g)].map((valor) => valor[1] ?? '')
+    const iniciais = [...encontrado[1].matchAll(/'([^']+)'/g)].map((valor) => valor[1] ?? '')
+    const acrescentados = [
+      ...sql.matchAll(new RegExp(String.raw`alter type oportunidades\.${nome} add value '([^']+)'`, 'g')),
+    ].map((valor) => valor[1] ?? '')
+    return [...iniciais, ...acrescentados]
   }
 
   const enums: Array<[string, readonly string[]]> = [
