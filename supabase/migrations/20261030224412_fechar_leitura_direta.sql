@@ -11,5 +11,5 @@ revoke select (id, nome) on table oportunidades.fontes from authenticated;
 -- O uso do schema continua, só para os tipos da busca (tipo, região, público) serem reconhecidos;
 -- sem permissão em nenhuma tabela, ele não expõe dado nenhum.
 
-drop policy oportunidades_publicadas_para_contas on oportunidades.oportunidades;
-drop policy fontes_com_oportunidade_publicada on oportunidades.fontes;
+-- As políticas de leitura criadas na vitrine ficam, mas sem efeito: sem a permissão de
+-- leitura acima, o papel authenticated não chega às tabelas.
