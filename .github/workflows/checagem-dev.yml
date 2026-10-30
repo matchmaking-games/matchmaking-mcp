@@ -1,0 +1,40 @@
+name: Checagem do servidor publicado
+
+# Depois de cada merge na next, espera o endereço de dev mostrar a versão nova e confere
+# de fora o que um assistente vê: o servidor no ar, os metadados de login e a recusa de
+# quem chega sem acesso.
+on:
+  push:
+    branches: [next]
+
+permissions:
+  contents: read
+
+jobs:
+  checar:
+    name: Servidor publicado responde certo
+    runs-on: ubuntu-latest
+    env:
+      BASE: https://mcp-dev.matchmaking.games
+    steps:
+      - name: Esperar a versão nova no ar (até 10 minutos)
+        run: |
+          for tentativa in $(seq 1 60); do
+            if curl -fsS "$BASE/api/health" | grep -q "\"versao\":\"$GITHUB_SHA\""; then
+              echo "Versão $GITHUB_SHA no ar."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "A versão $GITHUB_SHA não apareceu em $BASE em 10 minutos."
+          exit 1
+      - name: Metadados de login apontam para o Supabase
+        run: |
+          curl -fsS "$BASE/.well-known/oauth-protected-resource" | grep -q '"authorization_servers":\["https://[a-z0-9]*\.supabase\.co/auth/v1"\]'
+      - name: Quem chega sem acesso recebe 401 com o caminho do login
+        run: |
+          cabecalhos=$(curl -s -o /dev/null -D - -X POST "$BASE/mcp" \
+            -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          echo "$cabecalhos" | grep -qi '^HTTP/[0-9.]* 401'
+          echo "$cabecalhos" | grep -qi '^www-authenticate: Bearer resource_metadata='

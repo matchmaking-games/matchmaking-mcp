@@ -31,6 +31,23 @@ jobs:
   banco:
     name: Banco (regras das migrations)
     runs-on: ubuntu-latest
+    services:
+      # Banco temporário: existe só durante este teste, na nuvem do GitHub.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,3 +55,16 @@ jobs:
           node-version: '24'
       - run: node --test scripts/*.test.mjs
       - run: node scripts/verificar-migrations.mjs supabase/migrations
+      - name: Aplicar as migrations num banco temporário
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/00_ambiente.sql
+          for arquivo in supabase/migrations/*.sql; do
+            echo "Aplicando $arquivo"
+            psql -v ON_ERROR_STOP=1 -q -f "$arquivo"
+          done
+      - name: Testar as regras de acesso
+        run: |
+          for arquivo in supabase/tests/1*.sql; do
+            echo "Testando $arquivo"
+            psql -v ON_ERROR_STOP=1 -q -f "$arquivo"
+          done
