@@ -1,4 +1,4 @@
-// Leitura da vitrine do índice, sempre com o acesso da própria pessoa (as regras do banco valem).
+// Busca na vitrine do índice, sempre com o acesso da própria pessoa.
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import type { Configuracao } from './config.js'
@@ -33,14 +33,6 @@ export type ConsultarVitrine = (token: string, filtros: FiltrosVitrine) => Promi
 
 export class ErroVitrine extends Error {}
 
-const COLUNAS =
-  'id, titulo, tipo, link_oficial, prazo, natureza_prazo, abrangencia, ufs, publico, descricao, valor, publico_especifico, fonte'
-
-// Trata a palavra buscada como texto literal, nunca como curinga.
-export function escaparTextoBusca(texto: string): string {
-  return texto.replace(/[\\%_]/g, (caractere) => `\\${caractere}`)
-}
-
 export function criarConsultaVitrine(config: Configuracao): ConsultarVitrine {
   return async (token, filtros) => {
     const supabase = createClient(config.supabaseUrl, config.supabaseChavePublica, {
@@ -48,13 +40,13 @@ export function criarConsultaVitrine(config: Configuracao): ConsultarVitrine {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
 
-    let consulta = supabase.schema('vitrine').from('oportunidades').select(COLUNAS)
-    if (filtros.tipo) consulta = consulta.eq('tipo', filtros.tipo)
-    // Vaga remota e oportunidade nacional valem para todos os estados.
-    if (filtros.uf) consulta = consulta.or(`abrangencia.in.(nacional,remoto),ufs.cs.{${filtros.uf}}`)
-    if (filtros.texto) consulta = consulta.ilike('titulo', `%${escaparTextoBusca(filtros.texto)}%`)
-
-    const { data, error } = await consulta.order('prazo', { ascending: true }).limit(filtros.limite)
+    // A busca roda no banco, com os filtros aplicados antes do limite (no máximo 20 itens).
+    const { data, error } = await supabase.schema('vitrine').rpc('buscar_oportunidades', {
+      p_tipo: filtros.tipo ?? null,
+      p_uf: filtros.uf ?? null,
+      p_texto: filtros.texto ?? null,
+      p_limite: filtros.limite,
+    })
     if (error) throw new ErroVitrine(error.message)
     return z.array(oportunidadeVitrineSchema).parse(data)
   }

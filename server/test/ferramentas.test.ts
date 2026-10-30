@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { descreverRegiao, formatarData, formatarOportunidade } from '../src/ferramentas.js'
-import { escaparTextoBusca, type OportunidadeVitrine } from '../src/vitrine.js'
+import type { OportunidadeVitrine } from '../src/vitrine.js'
 
 const evento: OportunidadeVitrine = {
   id: 'o-2',
@@ -45,11 +45,5 @@ describe('formatação', () => {
         '   Link oficial: https://matchmaking.games',
       ].join('\n'),
     )
-  })
-})
-
-describe('escaparTextoBusca', () => {
-  it('trata curingas como texto', () => {
-    expect(escaparTextoBusca('100% _remoto_')).toBe('100\\% \\_remoto\\_')
   })
 })
