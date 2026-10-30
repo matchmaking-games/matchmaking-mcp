@@ -56,10 +56,11 @@ export function descreverRegiao(oportunidade: Pick<OportunidadeVitrine, 'abrange
 }
 
 export function formatarOportunidade(oportunidade: OportunidadeVitrine, posicao: number): string {
-  const data =
-    oportunidade.natureza_prazo === 'encerramento_inscricoes'
-      ? `Inscrições até ${formatarData(oportunidade.prazo)}`
-      : `Data: ${formatarData(oportunidade.prazo)}`
+  const data = {
+    encerramento_inscricoes: `Inscrições até ${formatarData(oportunidade.prazo)}`,
+    data_do_evento: `Data: ${formatarData(oportunidade.prazo)}`,
+    vaga_aberta: 'Vaga aberta enquanto estiver no site de quem oferece',
+  }[oportunidade.natureza_prazo]
   const linhas = [
     `${posicao}. ${oportunidade.titulo}`,
     `   Tipo: ${NOMES_DOS_TIPOS[oportunidade.tipo]} · Região: ${descreverRegiao(oportunidade)} · Quem pode participar: ${NOMES_DO_PUBLICO[oportunidade.publico]}`,
