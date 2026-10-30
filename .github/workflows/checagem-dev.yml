@@ -1,9 +1,11 @@
 name: Checagem do servidor publicado
 
-# Roda quando a Vercel avisa que terminou de publicar uma versão do servidor.
-# Confere de fora o que um assistente vê: o servidor no ar, os metadados de login
-# e a recusa de quem chega sem acesso.
-on: deployment_status
+# Depois de cada merge na next, espera o endereço de dev mostrar a versão nova e confere
+# de fora o que um assistente vê: o servidor no ar, os metadados de login e a recusa de
+# quem chega sem acesso.
+on:
+  push:
+    branches: [next]
 
 permissions:
   contents: read
@@ -11,14 +13,21 @@ permissions:
 jobs:
   checar:
     name: Servidor publicado responde certo
-    if: github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
     env:
-      BASE: ${{ github.event.deployment_status.environment_url }}
+      BASE: https://mcp-dev.matchmaking.games
     steps:
-      - name: Servidor no ar
+      - name: Esperar a versão nova no ar (até 10 minutos)
         run: |
-          curl -fsS "$BASE/api/health" | grep -q '"status":"ok"'
+          for tentativa in $(seq 1 60); do
+            if curl -fsS "$BASE/api/health" | grep -q "\"versao\":\"$GITHUB_SHA\""; then
+              echo "Versão $GITHUB_SHA no ar."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "A versão $GITHUB_SHA não apareceu em $BASE em 10 minutos."
+          exit 1
       - name: Metadados de login apontam para o Supabase
         run: |
           curl -fsS "$BASE/.well-known/oauth-protected-resource" | grep -q '"authorization_servers":\["https://[a-z0-9]*\.supabase\.co/auth/v1"\]'
