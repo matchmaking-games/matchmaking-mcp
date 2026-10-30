@@ -1,0 +1,31 @@
+name: Checagem do servidor publicado
+
+# Roda quando a Vercel avisa que terminou de publicar uma versão do servidor.
+# Confere de fora o que um assistente vê: o servidor no ar, os metadados de login
+# e a recusa de quem chega sem acesso.
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  checar:
+    name: Servidor publicado responde certo
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ github.event.deployment_status.environment_url }}
+    steps:
+      - name: Servidor no ar
+        run: |
+          curl -fsS "$BASE/api/health" | grep -q '"status":"ok"'
+      - name: Metadados de login apontam para o Supabase
+        run: |
+          curl -fsS "$BASE/.well-known/oauth-protected-resource" | grep -q '"authorization_servers":\["https://[a-z0-9]*\.supabase\.co/auth/v1"\]'
+      - name: Quem chega sem acesso recebe 401 com o caminho do login
+        run: |
+          cabecalhos=$(curl -s -o /dev/null -D - -X POST "$BASE/mcp" \
+            -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          echo "$cabecalhos" | grep -qi '^HTTP/[0-9.]* 401'
+          echo "$cabecalhos" | grep -qi '^www-authenticate: Bearer resource_metadata='
