@@ -27,13 +27,39 @@ declare
   n integer;
   fonte text;
 begin
-  select count(*), max(v.fonte) into n, fonte from vitrine.oportunidades v;
+  select count(*), max(b.fonte) into n, fonte from vitrine.buscar_oportunidades() b;
   if n <> 1 then
-    raise exception 'FALHA: a vitrine deveria mostrar só a oportunidade publicada e aberta, mostrou %', n;
+    raise exception 'FALHA: a busca deveria trazer só a oportunidade publicada e aberta, trouxe %', n;
   end if;
   if fonte is distinct from 'Fonte de teste' then
-    raise exception 'FALHA: a vitrine deveria trazer o crédito da fonte';
+    raise exception 'FALHA: a busca deveria trazer o crédito da fonte';
   end if;
+
+  select count(*) into n from vitrine.buscar_oportunidades(p_tipo => 'vaga');
+  if n <> 0 then
+    raise exception 'FALHA: a busca por vaga trouxe um edital';
+  end if;
+
+  select count(*) into n from vitrine.buscar_oportunidades(p_uf => 'RJ');
+  if n <> 0 then
+    raise exception 'FALHA: a busca por RJ trouxe uma oportunidade só de SP';
+  end if;
+
+  select count(*) into n from vitrine.buscar_oportunidades(p_texto => '50% aberta');
+  if n <> 0 then
+    raise exception 'FALHA: o texto da busca foi tratado como curinga';
+  end if;
+
+  select count(*) into n from vitrine.buscar_oportunidades(p_texto => 'ABERTA');
+  if n <> 1 then
+    raise exception 'FALHA: a busca por texto deveria ignorar maiúsculas';
+  end if;
+
+  begin
+    perform 1 from vitrine.oportunidades limit 1;
+    raise exception 'FALHA: visitante leu a vitrine inteira direto, sem a busca com limite';
+  exception when insufficient_privilege then null;
+  end;
 end;
 $$;
 
@@ -78,6 +104,11 @@ begin
   begin
     perform 1 from vitrine.oportunidades limit 1;
     raise exception 'FALHA: quem não fez login leu a vitrine';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform 1 from vitrine.buscar_oportunidades();
+    raise exception 'FALHA: quem não fez login usou a busca';
   exception when insufficient_privilege then null;
   end;
 end;
@@ -129,6 +160,23 @@ begin
     raise exception 'FALHA: o banco aceitou um sinônimo repetido';
   exception when unique_violation then null;
   end;
+end;
+$$;
+
+do $$
+declare
+  n integer;
+begin
+  insert into oportunidades.oportunidades
+    (fonte_id, titulo, tipo, link_oficial, prazo, natureza_prazo, abrangencia, publico, situacao, publicada_em)
+  select '00000000-0000-4000-8000-0000000000f1', 'Lote ' || g, 'vaga', 'https://exemplo.org/l' || g,
+         current_date + 10, 'encerramento_inscricoes', 'nacional', 'pessoa', 'publicada', now()
+  from generate_series(1, 25) g;
+
+  select count(*) into n from vitrine.buscar_oportunidades(p_limite => 500);
+  if n <> 20 then
+    raise exception 'FALHA: a busca deveria parar em 20 resultados, trouxe %', n;
+  end if;
 end;
 $$;
 
