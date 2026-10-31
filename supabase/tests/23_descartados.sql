@@ -8,9 +8,9 @@ insert into oportunidades.leituras (fonte_id, situacao, terminada_em)
 select '00000000-0000-4000-8000-0000000000f4', 'sucesso', now() from generate_series(1, 5);
 
 insert into oportunidades.itens_brutos (fonte_id, conteudo, hash_conteudo, situacao, processado_em)
-select '00000000-0000-4000-8000-0000000000f4'::uuid, jsonb_build_object('n', n), 'bom' || n, 'processado'::oportunidades.situacao_item_bruto, now() from generate_series(1, 10) n
+select '00000000-0000-4000-8000-0000000000f4'::uuid, jsonb_build_object('n', n), encode(sha256(convert_to('bom' || n, 'UTF8')), 'hex'), 'processado'::oportunidades.situacao_item_bruto, now() from generate_series(1, 10) n
 union all
-select '00000000-0000-4000-8000-0000000000f4'::uuid, jsonb_build_object('n', n), 'fora' || n, 'descartado'::oportunidades.situacao_item_bruto, now() from generate_series(1, 30) n;
+select '00000000-0000-4000-8000-0000000000f4'::uuid, jsonb_build_object('n', n), encode(sha256(convert_to('fora' || n, 'UTF8')), 'hex'), 'descartado'::oportunidades.situacao_item_bruto, now() from generate_series(1, 30) n;
 
 do $$
 begin
