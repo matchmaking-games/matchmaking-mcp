@@ -73,8 +73,19 @@ Deno.serve(async (req) => {
 
         const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : []))
         const [{ encerradas }] = await sql`select oportunidades.encerrar_ausentes(${fonte.fonte_id}, ${links}) as encerradas`
+
+        // Vagas sem prazo que continuam na fonte ganham de novo o prazo de conferência.
+        const abertas = itens.flatMap((item) => (item.candidato?.natureza_prazo === 'vaga_aberta' ? [item.candidato] : []))
+        let renovadas = 0
+        if (abertas.length > 0) {
+          const prazo = abertas.map((candidato) => candidato.prazo).sort().at(-1)
+          const linksAbertos = abertas.map((candidato) => candidato.link_oficial)
+          const [linha] = await sql`select oportunidades.renovar_vagas_abertas(${fonte.fonte_id}, ${linksAbertos}, ${prazo}::date) as renovadas`
+          renovadas = linha.renovadas
+        }
+
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, null, ${itens.length}, ${novos})`
-        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas })
+        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas, renovadas })
       } catch (erro) {
         const mensagem = erro instanceof Error ? erro.message : String(erro)
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, ${mensagem})`
