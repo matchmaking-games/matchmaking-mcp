@@ -4,6 +4,7 @@
 import postgres from 'npm:postgres@3.4.5'
 import { criarClassificadorGemini, type Classificar } from '../_shared/ia/classificar.ts'
 import { lerGreenhouse } from '../_shared/leitores/greenhouse.ts'
+import { lerPlanilha } from '../_shared/leitores/planilha.ts'
 import { lerRss } from '../_shared/leitores/rss.ts'
 import type { Buscar, ItemLido } from '../_shared/leitores/tipos.ts'
 
@@ -22,6 +23,7 @@ interface Leitor {
 const LEITORES: Record<string, Leitor> = {
   greenhouse: { ler: lerGreenhouse, listaCompleta: true },
   rss: { ler: lerRss, listaCompleta: false },
+  planilha: { ler: lerPlanilha, listaCompleta: true },
 }
 
 // Modelo da IA que classifica textos de fontes abertas. Trocar de modelo é mudar aqui.
@@ -95,14 +97,15 @@ Deno.serve(async (req) => {
         const itens = await leitor.ler(fonte.configuracao, buscar, hojeEmBrasilia(), contexto)
         let novos = 0
         for (const item of itens) {
-          // Item sem candidato (fora do escopo, ou notícia guardada para depois) já chega descartado,
-          // com o motivo dado pelo leitor. Descartado não conta como erro da fonte na confiança dela.
-          const motivo = !item.candidato && item.motivo ? item.motivo.slice(0, 2000) : null
+          // Item sem candidato já chega fechado, com o motivo dado pelo leitor: descartado (fora do escopo,
+          // notícia guardada para depois), que não conta contra a fonte, ou recusado (veio com defeito), que conta.
+          const situacao = item.candidato ? 'pendente' : item.problema ? 'rejeitado' : item.motivo ? 'descartado' : 'pendente'
+          const motivo = item.candidato ? null : ((item.problema ?? item.motivo)?.slice(0, 2000) ?? null)
           const inseridos = await sql`
             insert into oportunidades.itens_brutos (fonte_id, id_externo, conteudo, hash_conteudo, candidato, situacao, motivo, processado_em)
             values (${fonte.fonte_id}, ${item.id_externo}, ${sql.json(item.conteudo as never)},
                     ${await hashDoConteudo(item.conteudo)}, ${item.candidato ? sql.json(item.candidato as never) : null},
-                    ${motivo ? 'descartado' : 'pendente'}::oportunidades.situacao_item_bruto, ${motivo}, ${motivo ? new Date() : null})
+                    ${situacao}::oportunidades.situacao_item_bruto, ${motivo}, ${situacao === 'pendente' ? null : new Date()})
             on conflict (fonte_id, hash_conteudo) do nothing
             returning id`
           novos += inseridos.length
@@ -110,13 +113,17 @@ Deno.serve(async (req) => {
 
         let encerradas = 0
         if (leitor.listaCompleta) {
-          const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : []))
+          // Linha com defeito ainda está na fonte: a oportunidade que já existia não é fechada por isso.
+          const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : item.problema ? [item.id_externo] : []))
           const [linha] = await sql`select oportunidades.encerrar_ausentes(${fonte.fonte_id}, ${links}) as encerradas`
           encerradas = linha.encerradas
         }
 
-        // Vagas sem prazo que continuam na fonte ganham de novo o prazo de conferência.
-        const abertas = itens.flatMap((item) => (item.candidato?.natureza_prazo === 'vaga_aberta' ? [item.candidato] : []))
+        // Itens sem prazo que continuam numa fonte de lista inteira ganham de novo o prazo de conferência.
+        const semPrazo = ['vaga_aberta', 'aberta_sem_data']
+        const abertas = leitor.listaCompleta
+          ? itens.flatMap((item) => (item.candidato && semPrazo.includes(item.candidato.natureza_prazo) ? [item.candidato] : []))
+          : []
         let renovadas = 0
         if (abertas.length > 0) {
           const prazo = abertas.map((candidato) => candidato.prazo).sort().at(-1)
