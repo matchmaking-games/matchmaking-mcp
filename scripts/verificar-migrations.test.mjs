@@ -103,6 +103,25 @@ describe('verificarSql', () => {
     assert.match(verificarSql(ARQUIVO, 'select 1;').join(), /não reconhecido/)
   })
 
+  it('aceita tarefa do agendador com nome próprio que chama uma função nossa', () => {
+    const sql = `
+      select cron.schedule('oportunidades-coletar', '*/30 * * * *', 'select oportunidades.chamar_coleta()');
+      select cron.unschedule('oportunidades-antiga');
+    `
+    assert.deepEqual(verificarSql(ARQUIVO, sql), [])
+  })
+
+  it('recusa tarefa do agendador fora do padrão', () => {
+    for (const [sql, erro] of [
+      [`select cron.schedule('limpar', '0 3 * * *', 'select oportunidades.f()');`, /nome "oportunidades-/],
+      [`select cron.unschedule('newsletter-expirar-itens');`, /nome "oportunidades-/],
+      [`select cron.schedule('oportunidades-x', '0 3 * * *', 'delete from public.vagas');`, /só pode chamar/],
+      [`select cron.schedule('oportunidades-x', '0 3 * * *', $$select oportunidades.f()$$);`, /aspas simples/],
+    ]) {
+      assert.match(verificarSql(ARQUIVO, sql).join(), erro, sql)
+    }
+  })
+
   it('permite apontar para tabelas do site sem alterá-las', () => {
     const sql = TABELA_CORRETA.replace('(id uuid primary key)', '(id uuid primary key references public.habilidades (id))')
     assert.deepEqual(verificarSql(ARQUIVO, sql), [])

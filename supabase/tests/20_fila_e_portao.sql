@@ -1,5 +1,7 @@
 -- Testes da fila de coleta, do registro de leituras e do portão de qualidade.
 begin;
+-- As datas do teste seguem Brasília, como o portão; sem isso, à noite "ontem" em UTC ainda é "hoje" lá.
+set local timezone = 'America/Sao_Paulo';
 
 insert into oportunidades.fontes (id, nome, leitor, intervalo_minutos)
 values ('00000000-0000-4000-8000-0000000000f2', 'Fonte da fila', 'teste', 60);

@@ -1,6 +1,8 @@
 -- Testes das regras do banco, rodados num banco temporário a cada PR.
 -- Cada bloco para a execução com "FALHA: ..." se uma regra não for cumprida.
 begin;
+-- As datas do teste seguem Brasília, como o portão; sem isso, à noite "ontem" em UTC ainda é "hoje" lá.
+set local timezone = 'America/Sao_Paulo';
 
 -- Dados de teste, gravados como dono do banco.
 insert into public.habilidades (id, nome) values ('00000000-0000-4000-8000-0000000000a1', 'Unity');

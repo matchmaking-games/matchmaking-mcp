@@ -2,7 +2,8 @@
 // - tabela nova tem RLS ligado e GRANT ou REVOKE explícito para anon e authenticated;
 // - função SECURITY DEFINER tem SET search_path = '';
 // - ALTER TYPE ... ADD VALUE fica sozinho na sua migration;
-// - nada é criado ou alterado fora dos schemas deste repositório (as tabelas do site ficam intocadas).
+// - nada é criado ou alterado fora dos schemas deste repositório (as tabelas do site ficam intocadas);
+// - o agendador (cron) só recebe tarefas com nome "oportunidades-..." que chamam uma função deste repositório.
 //
 // Uso: node scripts/verificar-migrations.mjs supabase/migrations
 
@@ -12,6 +13,13 @@ import { pathToFileURL } from 'node:url'
 
 // Schemas em que este repositório pode criar e alterar objetos.
 export const SCHEMAS_PERMITIDOS = ['oportunidades', 'vitrine']
+
+// Única exceção aos schemas: tarefas do agendador, sempre com nome próprio e chamando uma função
+// nossa sem argumentos. As tarefas do site no cron ficam intocadas.
+const AGENDAR = /cron\.schedule\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*\)/gi
+const DESAGENDAR = /cron\.unschedule\s*\(\s*'([^']*)'\s*\)/gi
+const TAREFA = /^oportunidades-[a-z0-9-]+$/
+const COMANDO_DA_TAREFA = new RegExp(String.raw`^select (?:${SCHEMAS_PERMITIDOS.join('|')})\.[a-z_][a-z0-9_]*\(\)$`)
 
 const NOME_ARQUIVO = /^\d{14}_[a-z0-9_]+\.sql$/
 const NOME = String.raw`(?:"[^"]+"|[a-z_][a-z0-9_$]*)(?:\.(?:"[^"]+"|[a-z_][a-z0-9_$]*))*`
@@ -134,7 +142,23 @@ export function verificarSql(arquivo, sql) {
     problemas.push(`o nome do arquivo deve seguir AAAAMMDDHHMMSS_descricao.sql`)
   }
 
+  const agendamentos = [...sql.matchAll(AGENDAR)].map((m) => ({ nome: m[1], comando: m[2].trim().toLowerCase() }))
+  const desagendamentos = [...sql.matchAll(DESAGENDAR)].map((m) => ({ nome: m[1] }))
+  const comandosDoCron = comandos.filter((comando) => /^select cron\.(?:schedule|unschedule) ?\(/.test(comando))
+  if (comandosDoCron.length !== agendamentos.length + desagendamentos.length) {
+    problemas.push(`use cron.schedule('nome', 'quando', 'comando') e cron.unschedule('nome'), com texto entre aspas simples`)
+  }
+  for (const { nome } of [...agendamentos, ...desagendamentos]) {
+    if (!TAREFA.test(nome)) problemas.push(`a tarefa do agendador "${nome}" precisa de nome "oportunidades-..."`)
+  }
+  for (const { nome, comando } of agendamentos) {
+    if (!COMANDO_DA_TAREFA.test(comando)) {
+      problemas.push(`a tarefa "${nome}" só pode chamar uma função deste repositório, como "select oportunidades.f()"`)
+    }
+  }
+
   for (const comando of comandos) {
+    if (comandosDoCron.includes(comando)) continue
     const regra = COMANDOS.find(({ padrao }) => padrao.test(comando))
     if (!regra) {
       problemas.push(`comando não reconhecido pelo verificador: "${comando.slice(0, 60)}"`)
