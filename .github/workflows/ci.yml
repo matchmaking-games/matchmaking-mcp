@@ -62,9 +62,9 @@ jobs:
             echo "Aplicando $arquivo"
             psql -v ON_ERROR_STOP=1 -q -f "$arquivo"
           done
-      - name: Testar as regras de acesso
+      - name: Testar as regras do banco
         run: |
-          for arquivo in supabase/tests/1*.sql; do
+          for arquivo in supabase/tests/[1-9]*.sql; do
             echo "Testando $arquivo"
             psql -v ON_ERROR_STOP=1 -q -f "$arquivo"
           done
