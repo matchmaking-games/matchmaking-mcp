@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
             insert into oportunidades.itens_brutos (fonte_id, id_externo, conteudo, hash_conteudo, candidato, situacao, motivo, processado_em)
             values (${fonte.fonte_id}, ${item.id_externo}, ${sql.json(item.conteudo as never)},
                     ${await hashDoConteudo(item.conteudo)}, ${item.candidato ? sql.json(item.candidato as never) : null},
-                    ${motivo ? 'descartado' : 'pendente'}, ${motivo}, ${motivo ? new Date() : null})
+                    ${motivo ? 'descartado' : 'pendente'}::oportunidades.situacao_item_bruto, ${motivo}, ${motivo ? new Date() : null})
             on conflict (fonte_id, hash_conteudo) do nothing
             returning id`
           novos += inseridos.length
