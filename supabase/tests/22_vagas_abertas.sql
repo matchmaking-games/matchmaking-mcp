@@ -9,17 +9,21 @@ values
   ('00000000-0000-4000-8000-0000000000f3', 'Continua aberta', 'vaga', 'https://v.org/1', current_date + 2, 'vaga_aberta', 'nacional', 'pessoa', 'em_moderacao'),
   ('00000000-0000-4000-8000-0000000000f3', 'Tem prazo próprio', 'vaga', 'https://v.org/2', current_date + 2, 'encerramento_inscricoes', 'nacional', 'pessoa', 'em_moderacao'),
   ('00000000-0000-4000-8000-0000000000f3', 'Já tem prazo maior', 'vaga', 'https://v.org/3', current_date + 30, 'vaga_aberta', 'nacional', 'pessoa', 'em_moderacao'),
-  ('00000000-0000-4000-8000-0000000000f3', 'Saiu do site', 'vaga', 'https://v.org/4', current_date + 2, 'vaga_aberta', 'nacional', 'pessoa', 'em_moderacao');
+  ('00000000-0000-4000-8000-0000000000f3', 'Saiu do site', 'vaga', 'https://v.org/4', current_date + 2, 'vaga_aberta', 'nacional', 'pessoa', 'em_moderacao'),
+  ('00000000-0000-4000-8000-0000000000f3', 'Mentoria sem data', 'mentoria', 'https://v.org/5', current_date + 2, 'aberta_sem_data', 'nacional', 'empresa', 'em_moderacao');
 
 do $$
 declare
-  links text[] := array['https://v.org/1', 'https://v.org/2', 'https://v.org/3'];
+  links text[] := array['https://v.org/1', 'https://v.org/2', 'https://v.org/3', 'https://v.org/5'];
   renovadas integer;
   encerradas integer;
 begin
   renovadas := oportunidades.renovar_vagas_abertas('00000000-0000-4000-8000-0000000000f3', links, current_date + 14);
-  if renovadas <> 1 then
-    raise exception 'FALHA: só a vaga aberta ainda presente deveria ser renovada; renovou %', renovadas;
+  if renovadas <> 2 then
+    raise exception 'FALHA: só a vaga aberta e a oportunidade sem data ainda presentes deveriam ser renovadas; renovou %', renovadas;
+  end if;
+  if not exists (select 1 from oportunidades.oportunidades where link_oficial = 'https://v.org/5' and prazo = current_date + 14) then
+    raise exception 'FALHA: a oportunidade sem data ainda presente deveria ganhar o novo prazo';
   end if;
   if not exists (select 1 from oportunidades.oportunidades where link_oficial = 'https://v.org/1' and prazo = current_date + 14) then
     raise exception 'FALHA: a vaga aberta deveria ganhar o novo prazo de conferência';

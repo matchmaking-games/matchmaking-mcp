@@ -22,6 +22,8 @@ export interface ItemLido {
   candidato: Candidato | null
   // Quando não há candidato: por que o item fica de fora (é guardado como descartado, com este motivo).
   motivo?: string
+  // Quando o item veio com defeito (linha mal preenchida): vai para os recusados e conta contra a fonte.
+  problema?: string
 }
 
 // Busca HTTP injetável, para os testes não dependerem da rede.

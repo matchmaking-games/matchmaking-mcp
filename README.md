@@ -22,6 +22,7 @@ Tipos de oportunidade: vaga; edital ou fomento; game jam; evento; chamada de fes
 | `server/` | Servidor do MCP, publicado na Vercel |
 | `supabase/migrations/` | Estrutura do banco (índice de oportunidades, fontes, sinônimos) |
 | `supabase/functions/` | Funções de coleta, filtro e alertas |
+| `modelos/` | Modelo de planilha para organizações conectarem suas oportunidades |
 
 ## Contribuindo
 
