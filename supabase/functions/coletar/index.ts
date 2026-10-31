@@ -2,14 +2,30 @@
 // A cada chamada, ela lê as fontes com leitura vencida, uma por vez, guarda os itens como
 // chegaram, passa todos pelo portão de qualidade e registra o resultado de cada leitura.
 import postgres from 'npm:postgres@3.4.5'
+import { criarClassificadorGemini, type Classificar } from '../_shared/ia/classificar.ts'
 import { lerGreenhouse } from '../_shared/leitores/greenhouse.ts'
+import { lerRss } from '../_shared/leitores/rss.ts'
 import type { Buscar, ItemLido } from '../_shared/leitores/tipos.ts'
 
-type Leitor = (configuracao: unknown, buscar: Buscar, hojeISO: string) => Promise<ItemLido[]>
+interface Contexto {
+  jaVistos: Set<string>
+  classificar: Classificar
+  ate: number
+}
+
+interface Leitor {
+  ler: (configuracao: unknown, buscar: Buscar, hojeISO: string, contexto: Contexto) => Promise<ItemLido[]>
+  // A fonte mostra a lista inteira (o que sumiu, encerrou) ou só os itens mais recentes (RSS).
+  listaCompleta: boolean
+}
 
 const LEITORES: Record<string, Leitor> = {
-  greenhouse: lerGreenhouse,
+  greenhouse: { ler: lerGreenhouse, listaCompleta: true },
+  rss: { ler: lerRss, listaCompleta: false },
 }
+
+// Modelo da IA que classifica textos de fontes abertas. Trocar de modelo é mudar aqui.
+const MODELO_GEMINI = 'gemini-3.1-flash-lite'
 
 // Cada execução tem até 150 segundos no plano gratuito; paramos antes para fechar tudo direito.
 const TEMPO_MAXIMO_MS = 100_000
@@ -41,6 +57,15 @@ async function hashDoConteudo(conteudo: unknown): Promise<string> {
 const buscar: Buscar = (url) =>
   fetch(url, { headers: { 'User-Agent': 'MatchmakingIndice/1.0 (+https://matchmaking.games)' }, signal: AbortSignal.timeout(20_000) })
 
+// A chave do Gemini só é exigida quando uma fonte precisa da IA.
+function criarClassificador(): Classificar {
+  const chave = Deno.env.get('GEMINI_API_KEY')
+  if (!chave) {
+    return () => Promise.reject(new Error('Falta o segredo GEMINI_API_KEY nas funções do Supabase'))
+  }
+  return criarClassificadorGemini({ chave, modelo: MODELO_GEMINI, postar: fetch })
+}
+
 Deno.serve(async (req) => {
   if (!chamadaDoAgendador(req)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -49,6 +74,7 @@ Deno.serve(async (req) => {
   const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { max: 1, prepare: false })
   const inicio = Date.now()
   const leituras: Array<Record<string, unknown>> = []
+  const classificar = criarClassificador()
 
   try {
     while (leituras.length < MAXIMO_DE_FONTES && Date.now() - inicio < TEMPO_MAXIMO_MS) {
@@ -59,20 +85,35 @@ Deno.serve(async (req) => {
         const leitor = LEITORES[fonte.leitor as string]
         if (!leitor) throw new Error(`Leitor desconhecido: ${fonte.leitor}`)
 
-        const itens = await leitor(fonte.configuracao, buscar, hojeEmBrasilia())
+        const vistos = await sql`select id_externo from oportunidades.itens_brutos where fonte_id = ${fonte.fonte_id} and id_externo is not null`
+        const contexto: Contexto = {
+          jaVistos: new Set(vistos.map((linha) => linha.id_externo as string)),
+          classificar,
+          ate: inicio + TEMPO_MAXIMO_MS - 15_000,
+        }
+
+        const itens = await leitor.ler(fonte.configuracao, buscar, hojeEmBrasilia(), contexto)
         let novos = 0
         for (const item of itens) {
+          // Item sem candidato (fora do escopo, ou notícia guardada para depois) já chega descartado,
+          // com o motivo dado pelo leitor. Descartado não conta como erro da fonte na confiança dela.
+          const motivo = !item.candidato && item.motivo ? item.motivo.slice(0, 2000) : null
           const inseridos = await sql`
-            insert into oportunidades.itens_brutos (fonte_id, id_externo, conteudo, hash_conteudo, candidato)
+            insert into oportunidades.itens_brutos (fonte_id, id_externo, conteudo, hash_conteudo, candidato, situacao, motivo, processado_em)
             values (${fonte.fonte_id}, ${item.id_externo}, ${sql.json(item.conteudo as never)},
-                    ${await hashDoConteudo(item.conteudo)}, ${item.candidato ? sql.json(item.candidato as never) : null})
+                    ${await hashDoConteudo(item.conteudo)}, ${item.candidato ? sql.json(item.candidato as never) : null},
+                    ${motivo ? 'descartado' : 'pendente'}::oportunidades.situacao_item_bruto, ${motivo}, ${motivo ? new Date() : null})
             on conflict (fonte_id, hash_conteudo) do nothing
             returning id`
           novos += inseridos.length
         }
 
-        const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : []))
-        const [{ encerradas }] = await sql`select oportunidades.encerrar_ausentes(${fonte.fonte_id}, ${links}) as encerradas`
+        let encerradas = 0
+        if (leitor.listaCompleta) {
+          const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : []))
+          const [linha] = await sql`select oportunidades.encerrar_ausentes(${fonte.fonte_id}, ${links}) as encerradas`
+          encerradas = linha.encerradas
+        }
 
         // Vagas sem prazo que continuam na fonte ganham de novo o prazo de conferência.
         const abertas = itens.flatMap((item) => (item.candidato?.natureza_prazo === 'vaga_aberta' ? [item.candidato] : []))

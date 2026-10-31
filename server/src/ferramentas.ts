@@ -60,6 +60,7 @@ export function formatarOportunidade(oportunidade: OportunidadeVitrine, posicao:
     encerramento_inscricoes: `Inscrições até ${formatarData(oportunidade.prazo)}`,
     data_do_evento: `Data: ${formatarData(oportunidade.prazo)}`,
     vaga_aberta: 'Vaga aberta enquanto estiver no site de quem oferece',
+    aberta_sem_data: 'Inscrições abertas, sem data de encerramento informada (conferimos de tempos em tempos)',
   }[oportunidade.natureza_prazo]
   const linhas = [
     `${posicao}. ${oportunidade.titulo}`,

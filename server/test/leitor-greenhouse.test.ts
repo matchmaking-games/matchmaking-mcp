@@ -71,20 +71,22 @@ describe('mapearVaga', () => {
   })
 
   it('vaga fora do Brasil e não remota fica sem candidato', () => {
-    expect(mapearVaga({ ...vaga, location: { name: 'Dublin, Ireland' } }, HOJE).candidato).toBeNull()
+    const item = mapearVaga({ ...vaga, location: { name: 'Dublin, Ireland' } }, HOJE)
+    expect(item.candidato).toBeNull()
+    expect(item.motivo).toContain('fora do Brasil')
   })
 })
 
 describe('lerGreenhouse', () => {
   function buscarCom(status: number, corpo: unknown): Buscar {
-    return async () => ({ ok: status === 200, status, json: async () => corpo })
+    return async () => ({ ok: status === 200, status, json: async () => corpo, text: async () => '' })
   }
 
   it('lê as vagas do board configurado', async () => {
     const urls: string[] = []
     const buscar: Buscar = async (url) => {
       urls.push(url)
-      return { ok: true, status: 200, json: async () => ({ jobs: [{ id: 1, title: 'Vaga', absolute_url: 'https://x.org/1', location: { name: 'Brazil' } }] }) }
+      return { ok: true, status: 200, text: async () => '', json: async () => ({ jobs: [{ id: 1, title: 'Vaga', absolute_url: 'https://x.org/1', location: { name: 'Brazil' } }] }) }
     }
     const itens = await lerGreenhouse({ board: 'wildlifestudios' }, buscar, HOJE)
     expect(urls).toEqual(['https://boards-api.greenhouse.io/v1/boards/wildlifestudios/jobs?content=true'])

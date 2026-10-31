@@ -97,7 +97,12 @@ export function mapearVaga(vaga: VagaGreenhouse, hojeISO: string): ItemLido {
     }
   }
 
-  return { id_externo: String(vaga.id), conteudo: vaga, candidato }
+  return {
+    id_externo: String(vaga.id),
+    conteudo: vaga,
+    candidato,
+    ...(candidato ? {} : { motivo: `Vaga fora do Brasil e não remota (${vaga.location?.name ?? 'sem local'})` }),
+  }
 }
 
 export async function lerGreenhouse(configuracao: unknown, buscar: Buscar, hojeISO: string): Promise<ItemLido[]> {
