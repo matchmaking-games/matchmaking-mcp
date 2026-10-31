@@ -58,8 +58,10 @@ Classifique em uma de três classes:
 - "oportunidade": algo que uma pessoa ou um estúdio de games pode disputar ou de que pode participar
   (edital ou fomento, game jam, evento, chamada de festival ou vitrine, curso ou capacitação, mentoria,
   aceleração ou incubação, chamada de publisher, terceirização ou co-desenvolvimento, vaga, playtest
-  aberto a estúdios). Se a oportunidade é de audiovisual em geral e jogos não podem participar, NÃO é
-  oportunidade: use "fora".
+  aberto a estúdios). Só é oportunidade se o texto disser que jogos ou quem faz jogos podem participar,
+  ou se for claramente do setor de games. Editais e ações de cinema, séries, animação, distribuição de
+  filmes ou audiovisual em geral NÃO são oportunidade só porque animação ou audiovisual têm relação com
+  games: se o texto não abre espaço para jogos, use "fora".
 - "noticia": informação útil para quem faz jogos, mas sem nada para a pessoa fazer agora (resultado de
   seleção, dados do setor, mudança de política pública para games).
 - "fora": todo o resto (sessões de cinema, estreias de filmes, lançamentos de jogos, assuntos sem relação
