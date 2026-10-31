@@ -22,7 +22,7 @@ export const ABRANGENCIAS = ['estado', 'nacional', 'remoto', 'internacional'] as
 
 export const PUBLICOS = ['pessoa', 'empresa', 'ambos'] as const
 
-export const NATUREZAS_PRAZO = ['encerramento_inscricoes', 'data_do_evento', 'vaga_aberta'] as const
+export const NATUREZAS_PRAZO = ['encerramento_inscricoes', 'data_do_evento', 'vaga_aberta', 'aberta_sem_data'] as const
 
 export const NIVEIS = ['iniciante', 'junior', 'pleno', 'senior', 'lead'] as const
 

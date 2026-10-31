@@ -9,7 +9,7 @@ export interface Candidato {
   tipo: string
   link_oficial: string
   prazo: string
-  natureza_prazo: 'encerramento_inscricoes' | 'data_do_evento' | 'vaga_aberta'
+  natureza_prazo: 'encerramento_inscricoes' | 'data_do_evento' | 'vaga_aberta' | 'aberta_sem_data'
   abrangencia: Abrangencia
   ufs?: string[]
   publico: 'pessoa' | 'empresa' | 'ambos'
@@ -20,7 +20,9 @@ export interface ItemLido {
   id_externo: string
   conteudo: unknown
   candidato: Candidato | null
+  // Quando não há candidato: por que o item fica de fora (é guardado como descartado, com este motivo).
+  motivo?: string
 }
 
 // Busca HTTP injetável, para os testes não dependerem da rede.
-export type Buscar = (url: string) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>
+export type Buscar = (url: string) => Promise<{ ok: boolean; status: number; json(): Promise<unknown>; text(): Promise<string> }>
