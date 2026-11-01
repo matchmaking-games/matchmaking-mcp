@@ -82,11 +82,13 @@ describe('montarEntrada', () => {
     expect(entrada).toContain('<noticias_recentes>\n1. Primeira\n2. Segunda \n</noticias_recentes>')
     expect(INSTRUCOES).toContain('muda alguma decisão de um profissional ou estúdio brasileiro de')
     expect(INSTRUCOES).toContain('não em quem joga nem no mercado global em geral')
+    expect(INSTRUCOES).toContain('como a inteligência artificial está mudando o desenvolvimento de jogos')
   })
 
   it('a instrução exige que o texto abra espaço para jogos', () => {
-    expect(INSTRUCOES).toContain('Só é oportunidade se o texto disser que jogos ou quem faz jogos podem participar')
-    expect(INSTRUCOES).toContain('NÃO são oportunidade só porque animação ou audiovisual têm relação com')
+    expect(INSTRUCOES).toContain('Só é oportunidade se jogos ou quem faz jogos podem participar')
+    expect(INSTRUCOES).toContain('Leis de incentivo à cultura que aceitam projetos de jogos')
+    expect(INSTRUCOES).toContain('programas públicos de fomento ao audiovisual e à cultura')
   })
 })
 
