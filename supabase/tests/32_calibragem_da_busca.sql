@@ -105,8 +105,9 @@ insert into perguntas values
 do $$
 declare
   -- Meta da calibragem e perguntas que já acertavam antes dos ajustes (nenhuma pode passar a errar).
-  v_meta numeric := 0;
-  v_obrigatorias integer[] := '{}';
+  -- Antes dos ajustes (02/11/2026) a busca acertava 15 de 32 (47%).
+  v_meta numeric := 0.9;
+  v_obrigatorias integer[] := '{1,3,4,5,6,8,9,12,21,25,26,29,30,31,32}';
   p record;
   v_codigos text[];
   v_top3 text[];
@@ -140,6 +141,63 @@ begin
   end if;
   if v_obrigatorias && v_falhas then
     raise exception 'FALHA: perguntas que acertavam passaram a errar: %', array(select unnest(v_obrigatorias) intersect select unnest(v_falhas));
+  end if;
+end;
+$$;
+
+-- O que a busca entendeu: correções avisadas, termo amplo sinalizado, filtros tirados da frase.
+do $$
+declare
+  r jsonb;
+begin
+  r := vitrine.pesquisar_oportunidades(p_texto => 'level desinger') -> 'interpretacao';
+  if r -> 'correcoes' <> '[{"de": "desinger", "para": "designer"}]'::jsonb then
+    raise exception 'FALHA: "desinger" deveria virar "designer", com aviso; veio %', r -> 'correcoes';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'mentorai') -> 'interpretacao';
+  if r -> 'correcoes' -> 0 ->> 'para' is distinct from 'mentoria' or r ->> 'tipo_do_texto' is distinct from 'mentoria' then
+    raise exception 'FALHA: "mentorai" deveria virar "mentoria" e filtrar o tipo; veio %', r;
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'futebol') -> 'interpretacao';
+  if jsonb_array_length(r -> 'correcoes') <> 0 then
+    raise exception 'FALHA: palavra sem parecida no vocabulário não deveria ser trocada; veio %', r -> 'correcoes';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'ui') -> 'interpretacao';
+  if jsonb_array_length(r -> 'correcoes') <> 0 then
+    raise exception 'FALHA: palavras curtas nunca são trocadas; veio %', r -> 'correcoes';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'artista') -> 'interpretacao';
+  if jsonb_array_length(r -> 'ambiguos') <> 1 or not (r -> 'ambiguos' -> 0 -> 'opcoes') ? 'Environment Artist' then
+    raise exception 'FALHA: "artista" deveria vir como termo amplo, com as funções possíveis; veio %', r -> 'ambiguos';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'level designer') -> 'interpretacao';
+  if jsonb_array_length(r -> 'ambiguos') <> 0 then
+    raise exception 'FALHA: o nome de uma função não é termo amplo; veio %', r -> 'ambiguos';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'editais de games') -> 'interpretacao';
+  if jsonb_array_length(r -> 'ambiguos') <> 0 then
+    raise exception 'FALHA: fora das vagas, funções não importam ("games" em editais não é amplo); veio %', r -> 'ambiguos';
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'quero uma vaga de UI em São Paulo') -> 'interpretacao';
+  if r ->> 'tipo_do_texto' is distinct from 'vaga' or r ->> 'uf_do_texto' is distinct from 'SP' or r -> 'termos' <> '["ui"]'::jsonb then
+    raise exception 'FALHA: a frase deveria virar tipo vaga, estado SP e o termo "ui"; veio %', r;
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'vaga remota de artista') -> 'interpretacao';
+  if r ->> 'abrangencia_do_texto' is distinct from 'remoto' then
+    raise exception 'FALHA: "remota" deveria filtrar as oportunidades remotas; veio %', r;
+  end if;
+
+  r := vitrine.pesquisar_oportunidades(p_texto => 'level designer terror') -> 'interpretacao';
+  if r ->> 'modo' is distinct from 'parcial' then
+    raise exception 'FALHA: sem oportunidade com todos os termos, a busca deveria trazer as parciais e avisar; veio %', r;
   end if;
 end;
 $$;

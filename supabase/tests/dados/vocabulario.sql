@@ -683,3 +683,7 @@ insert into oportunidades.sinonimos (termo, habilidade_id, tipo_funcao_id) value
   ('Visual Studio Code', '4ccc1ce1-484a-45e8-a5e8-5038a0010ee9', NULL),
   ('VR', 'b1708bb6-5db3-4f6a-80ab-54abb693cac9', NULL),
   ('VSCode', '4ccc1ce1-484a-45e8-a5e8-5038a0010ee9', NULL);
+-- Sinônimos acrescentados pela migration da busca calibrada (no dev eles entram pela migration).
+insert into oportunidades.sinonimos (termo, idioma, habilidade_id) values
+  ('audio design', 'en', '1dad7d91-05f3-402b-83a6-11947d033d4f'),
+  ('design de áudio', 'pt', '1dad7d91-05f3-402b-83a6-11947d033d4f');
