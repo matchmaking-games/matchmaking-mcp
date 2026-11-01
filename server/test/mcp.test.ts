@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Usuario } from '../src/autenticacao.js'
 import { tratarRequisicaoMcp, type DependenciasMcp } from '../src/mcp.js'
-import { ErroVitrine, type FiltrosVitrine, type OportunidadeVitrine } from '../src/vitrine.js'
+import { ErroVitrine, type FiltrosVitrine, type Interpretacao, type OportunidadeVitrine } from '../src/vitrine.js'
 
 interface RespostaJsonRpc {
   result?: {
@@ -32,17 +32,28 @@ const exemplo: OportunidadeVitrine = {
   fonte: 'Exemplos da Matchmaking (dados fictícios)',
 }
 
+const interpretacaoSimples: Interpretacao = {
+  termos: [],
+  correcoes: [],
+  ambiguos: [],
+  tipo_do_texto: null,
+  uf_do_texto: null,
+  abrangencia_do_texto: null,
+  modo: 'sem_texto',
+}
+
 function dependencias(
   usuario: Usuario | null,
   consultas: FiltrosVitrine[] = [],
   resultado: OportunidadeVitrine[] | Error = [exemplo],
+  interpretacao: Interpretacao = interpretacaoSimples,
 ): DependenciasMcp {
   return {
     verificarToken: async (token) => (token === 'valido' ? usuario : null),
     consultarVitrine: async (_token, filtros) => {
       consultas.push(filtros)
       if (resultado instanceof Error) throw resultado
-      return resultado
+      return { interpretacao, resultados: resultado }
     },
   }
 }
@@ -163,6 +174,39 @@ describe('ferramentas', () => {
       await tratarRequisicaoMcp(requisicao(chamarFerramenta('buscar_oportunidades'), 'valido'), dependencias(visitante, [], [])),
     )
     expect(resposta.result?.content?.[0]?.text).toContain('Não encontrei')
+  })
+
+  it('buscar_oportunidades conta ao assistente o que a busca entendeu', async () => {
+    const interpretacao: Interpretacao = {
+      termos: ['designer'],
+      correcoes: [{ de: 'desinger', para: 'designer' }],
+      ambiguos: [{ termo: 'designer', opcoes: ['Game Designer', 'Level Designer', 'UI Designer'] }],
+      tipo_do_texto: 'vaga',
+      uf_do_texto: 'SP',
+      abrangencia_do_texto: 'remoto',
+      modo: 'parcial',
+    }
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(
+        requisicao(chamarFerramenta('buscar_oportunidades', { texto: 'vaga remota de desinger em SP' }), 'valido'),
+        dependencias(visitante, [], [exemplo], interpretacao),
+      ),
+    )
+
+    const texto = resposta.result?.content?.[0]?.text ?? ''
+    expect(texto.startsWith('Notas da busca:')).toBe(true)
+    expect(texto).toContain('Busquei "designer" no lugar de "desinger"')
+    expect(texto).toContain('Filtros tirados da frase: tipo vaga, estado SP, só remotas.')
+    expect(texto).toContain('"designer" é amplo: pode ser Game Designer, Level Designer, UI Designer.')
+    expect(texto).toContain('têm parte deles')
+    expect(texto).toContain('1. [Exemplo] Edital')
+  })
+
+  it('buscar_oportunidades sem notas mostra só os resultados', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(requisicao(chamarFerramenta('buscar_oportunidades'), 'valido'), dependencias(visitante)),
+    )
+    expect(resposta.result?.content?.[0]?.text?.startsWith('1. [Exemplo] Edital')).toBe(true)
   })
 
   it('buscar_oportunidades recusa estado inexistente', async () => {
