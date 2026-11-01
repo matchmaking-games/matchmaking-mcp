@@ -75,7 +75,10 @@ Classifique em uma de três classes:
   quem pode participar e quais linguagens são aceitas (jogos, games, jogos digitais, linguagens digitais,
   multilinguagem, novas mídias). Leis de incentivo à cultura que aceitam projetos de jogos, como a Lei
   Rouanet, contam. Se o texto deixar claro que só aceita filmes, séries ou outra linguagem, NÃO é
-  oportunidade: use "noticia" se for uma política pública relevante para games, ou "fora".
+  oportunidade. Mas programas públicos de fomento ao audiovisual e à cultura (FSA, PNAB, Lei Paulo
+  Gustavo, editais estaduais e municipais de cultura) interessam a quem faz jogos mesmo quando a chamada
+  atual não aceita jogos: classifique como "noticia" de política pública, com nota de 60 a 75. Fundos
+  privados ou estrangeiros só para filmes são "fora".
 - "noticia": notícia que muda o trabalho de quem faz jogos, sem nada para a pessoa se inscrever agora.
 - "fora": todo o resto, inclusive: notícias para quem joga (trailers, lançamentos, artes, análises,
   promoções, jogos sendo encerrados para os jogadores); cinema, séries, fotografia e outras artes sem

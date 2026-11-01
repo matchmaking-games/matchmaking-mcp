@@ -88,6 +88,7 @@ describe('montarEntrada', () => {
   it('a instrução exige que o texto abra espaço para jogos', () => {
     expect(INSTRUCOES).toContain('Só é oportunidade se jogos ou quem faz jogos podem participar')
     expect(INSTRUCOES).toContain('Leis de incentivo à cultura que aceitam projetos de jogos')
+    expect(INSTRUCOES).toContain('programas públicos de fomento ao audiovisual e à cultura')
   })
 })
 
