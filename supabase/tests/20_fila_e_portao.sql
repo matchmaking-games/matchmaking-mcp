@@ -136,8 +136,10 @@ begin
 end;
 $$;
 
--- Confiança conquistada: 5 leituras boas e 10 itens com poucos erros promovem a fonte.
-insert into oportunidades.fontes (id, nome, leitor) values ('00000000-0000-4000-8000-0000000000f3', 'Fonte nova', 'teste');
+-- Confiança conquistada: fonte que aceita promoção, há mais de 7 dias no índice, com 5 leituras boas
+-- e 10 itens com poucos erros, passa a confiável.
+insert into oportunidades.fontes (id, nome, leitor, promove_sozinha, criado_em)
+values ('00000000-0000-4000-8000-0000000000f3', 'Fonte nova', 'teste', true, now() - interval '8 days');
 insert into oportunidades.leituras (fonte_id, situacao, iniciada_em, terminada_em)
 select '00000000-0000-4000-8000-0000000000f3', 'sucesso', now() - make_interval(hours => g), now() - make_interval(hours => g)
 from generate_series(1, 5) g;
@@ -148,6 +150,18 @@ from generate_series(1, 10) g;
 
 do $$
 begin
+  -- Antes dos 7 dias, nada de promoção, mesmo com histórico bom.
+  update oportunidades.fontes set criado_em = now() - interval '2 days' where id = '00000000-0000-4000-8000-0000000000f3';
+  if oportunidades.avaliar_confianca('00000000-0000-4000-8000-0000000000f3') <> 'observacao' then
+    raise exception 'FALHA: fonte com menos de 7 dias não deveria ganhar confiança';
+  end if;
+  -- Fonte interpretada pela IA (sem promoção automática) também não.
+  update oportunidades.fontes set criado_em = now() - interval '8 days', promove_sozinha = false where id = '00000000-0000-4000-8000-0000000000f3';
+  if oportunidades.avaliar_confianca('00000000-0000-4000-8000-0000000000f3') <> 'observacao' then
+    raise exception 'FALHA: fonte sem promoção automática não deveria ganhar confiança sozinha';
+  end if;
+  update oportunidades.fontes set promove_sozinha = true where id = '00000000-0000-4000-8000-0000000000f3';
+
   if oportunidades.avaliar_confianca('00000000-0000-4000-8000-0000000000f3') <> 'confiavel' then
     raise exception 'FALHA: a fonte com histórico bom deveria passar a confiável';
   end if;

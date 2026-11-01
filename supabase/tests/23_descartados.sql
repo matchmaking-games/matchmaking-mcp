@@ -3,7 +3,8 @@
 begin;
 set local timezone = 'America/Sao_Paulo';
 
-insert into oportunidades.fontes (id, nome, leitor) values ('00000000-0000-4000-8000-0000000000f4', 'Feed misturado', 'teste');
+insert into oportunidades.fontes (id, nome, leitor, promove_sozinha, criado_em)
+values ('00000000-0000-4000-8000-0000000000f4', 'Feed misturado', 'teste', true, now() - interval '8 days');
 insert into oportunidades.leituras (fonte_id, situacao, terminada_em)
 select '00000000-0000-4000-8000-0000000000f4', 'sucesso', now() from generate_series(1, 5);
 
