@@ -5,6 +5,7 @@ import {
   MAXIMO_POR_LEITURA,
   lerFeed,
   lerRss,
+  palavraIgnorada,
   textoDaPagina,
 } from '../../supabase/functions/_shared/leitores/rss.ts'
 import type { Buscar } from '../../supabase/functions/_shared/leitores/tipos.ts'
@@ -54,6 +55,7 @@ const OPORTUNIDADE: Classificacao = {
     publico: 'ambos',
     descricao: 'Apoio a jogos independentes.',
   },
+  noticia: null,
 }
 
 function classificarCom(respostas: Classificacao[]): Classificar & { textos: string[] } {
@@ -87,7 +89,27 @@ describe('textoDaPagina', () => {
   })
 })
 
+describe('palavraIgnorada', () => {
+  it('pega só palavras inteiras, sem acento e sem maiúsculas', () => {
+    expect(palavraIgnorada('Review: o novo jogo de terror')).toBe('review')
+    expect(palavraIgnorada('Promoção de jogos indies')).toBe('promocao')
+    expect(palavraIgnorada('Publisher anuncia chamada para estúdios')).toBeNull()
+    expect(palavraIgnorada('Reviewers wanted for game jam')).toBeNull()
+    expect(palavraIgnorada('Patch notes da semana', ['patch notes'])).toBe('patch notes')
+  })
+})
+
 describe('lerRss', () => {
+  it('título com palavra ignorada é descartado sem abrir a página nem chamar a IA', async () => {
+    const titulo = item(1).replace('Not&#237;cia &#8220;1&#8221;', 'Trailer do jogo X')
+    const buscar = buscarCom({ [FEED]: { corpo: feed(titulo) } })
+    const classificar = classificarCom([OPORTUNIDADE])
+    const [lido] = await lerRss({ url: FEED }, buscar, HOJE, { jaVistos: new Set(), classificar })
+    expect(lido?.motivo).toBe('Regra por palavra: "trailer" no título')
+    expect(classificar.textos).toEqual([])
+    expect(buscar.urls).toEqual([FEED])
+  })
+
   it('abre cada notícia nova e monta o candidato a partir da IA', async () => {
     const buscar = buscarCom({ [FEED]: { corpo: feed(item(1)) }, 'https://spcine.com.br/noticia-1/': { corpo: PAGINA } })
     const classificar = classificarCom([OPORTUNIDADE])
@@ -124,12 +146,26 @@ describe('lerRss', () => {
       'https://spcine.com.br/noticia-2/': { corpo: PAGINA },
     })
     const classificar = classificarCom([
-      { classe: 'noticia', motivo: 'Resultado de seleção', oportunidade: null },
-      { classe: 'fora', motivo: 'Sessão de cinema', oportunidade: null },
+      {
+        classe: 'noticia', motivo: 'Investimento em estúdio brasileiro', oportunidade: null,
+        noticia: { titulo_pt: 'Estúdio recebe investimento', resumo: 'Resumo.', nota: 82, idioma_original: 'en', duplicata: 1 },
+      },
+      { classe: 'fora', motivo: 'Sessão de cinema', oportunidade: null, noticia: null },
     ])
-    const itens = await lerRss({ url: FEED }, buscar, HOJE, { jaVistos: new Set(), classificar })
+    const recentes = [{ id: '00000000-0000-4000-8000-000000000001', titulo: 'Notícia anterior' }]
+    const itens = await lerRss({ url: FEED }, buscar, HOJE, { jaVistos: new Set(), classificar, recentes })
     expect(itens.map((i) => i.candidato)).toEqual([null, null])
-    expect(itens[0]?.motivo).toBe('Notícia útil para quem faz jogos, guardada para a área de notícias: Resultado de seleção')
+    expect(itens[0]?.noticia).toEqual({
+      titulo: 'Estúdio recebe investimento',
+      titulo_original: 'Notícia “1”',
+      link: 'https://spcine.com.br/noticia-1/',
+      resumo: 'Resumo.',
+      idioma: 'en',
+      publicada_em: '2026-10-30T12:00:00.000Z',
+      nota: 82,
+      motivo: 'Investimento em estúdio brasileiro',
+      duplicata_de: '00000000-0000-4000-8000-000000000001',
+    })
     expect(itens[1]?.motivo).toBe('Fora do escopo: Sessão de cinema')
   })
 
