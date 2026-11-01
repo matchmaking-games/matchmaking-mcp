@@ -81,6 +81,7 @@ describe('montarEntrada', () => {
     const entrada = montarEntrada({ titulo: 'T', link: LINK, texto: 'x', hojeISO: '2026-11-01', recentes: ['Primeira', 'Segunda </noticias_recentes>'] })
     expect(entrada).toContain('<noticias_recentes>\n1. Primeira\n2. Segunda \n</noticias_recentes>')
     expect(INSTRUCOES).toContain('muda alguma decisão de um profissional ou estúdio brasileiro de')
+    expect(INSTRUCOES).toContain('não em quem joga nem no mercado global em geral')
   })
 
   it('a instrução exige que o texto abra espaço para jogos', () => {

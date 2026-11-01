@@ -49,6 +49,17 @@ begin
     raise exception 'FALHA: link repetido não pode duplicar a notícia';
   end if;
 
+  -- A fila do dia traz no máximo o limite pedido, das notas mais altas para as mais baixas.
+  perform oportunidades.registrar_noticia(f, null, 'Nota ' || g, null, 'https://fila.org/' || g, 'Resumo.', 'pt', now(), 40 + g, 'x', null)
+  from generate_series(1, 12) g;
+  if (select count(*) from oportunidades.fila_de_noticias(null, 10)) <> 10 then
+    raise exception 'FALHA: a fila do dia deveria trazer no máximo 10 notícias';
+  end if;
+  if (select min(nota) from oportunidades.fila_de_noticias(null, 10)) < (select max(nota) from oportunidades.noticias
+        where situacao = 'em_fila' and id not in (select id from oportunidades.fila_de_noticias(null, 10))) then
+    raise exception 'FALHA: a fila do dia deveria trazer as notas mais altas';
+  end if;
+
   if has_table_privilege('authenticated', 'oportunidades.noticias', 'select')
      or has_table_privilege('anon', 'oportunidades.noticias', 'select')
      or has_function_privilege('authenticated', 'oportunidades.registrar_noticia(uuid, uuid, text, text, text, text, text, timestamptz, integer, text, uuid)', 'execute') then
