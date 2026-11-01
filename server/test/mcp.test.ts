@@ -124,6 +124,8 @@ describe('ferramentas', () => {
       await tratarRequisicaoMcp(requisicao(chamarFerramenta('o_que_posso_fazer'), 'valido'), dependencias(visitante)),
     )
     expect(resposta.result?.content?.[0]?.text).toContain('visitante')
+    expect(resposta.result?.content?.[0]?.text).not.toContain('fictíc')
+    expect(resposta.result?.content?.[0]?.text).toContain('Environment Artist')
   })
 
   it('o_que_posso_fazer diz quando a pessoa entrou com a conta', async () => {
