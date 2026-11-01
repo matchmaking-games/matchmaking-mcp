@@ -27,3 +27,10 @@ mal preenchida é recusada com motivo (e conta contra a fonte). Sem nenhuma linh
 
 Os leitores ficam em `_shared/leitores/`, um arquivo por tipo de fonte, e são testados pelos
 testes do servidor (`server/test/leitor-*.test.ts`).
+
+## calibrar
+
+Reavalia, com a régua atual da IA, itens que já foram lidos e devolve a classe e a nota de cada um,
+sem gravar nada no índice. Serve para comparar a IA com as marcações humanas depois de ajustar as
+instruções. Mesma senha `CRON_SECRET` da coleta; publicar com `verify_jwt = false`.
+Corpo: `{"itens": [{"id": "<id da notícia ou do item bruto>", "origem": "noticia" | "bruto"}]}` (até 60).
