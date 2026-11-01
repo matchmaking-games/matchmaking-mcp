@@ -91,13 +91,13 @@ begin
     and (p_tipo is null or o.tipo = p_tipo)
     -- Vaga remota e oportunidade nacional valem para todos os estados.
     and (p_uf is null or o.abrangencia in ('nacional', 'remoto') or upper(p_uf) = any (o.ufs))
-    -- Palavras inteiras, no título ou na descrição: "ui" não encontra "build".
+    -- Palavras inteiras, no título ou na descrição, aceitando o plural com "s": "ui" não encontra
+    -- "build", e "artista de cenário" encontra "artista de cenários". Os termos só têm letras, números
+    -- e espaços, então entram na expressão sem risco.
     and (v_termos is null or exists (
       select 1 from unnest(v_termos) as busca(termo)
-      where position(
-        ' ' || busca.termo || ' ' in
-        ' ' || regexp_replace(oportunidades.normalizar_termo(o.titulo || ' ' || coalesce(o.descricao, '')), '[^a-z0-9]+', ' ', 'g') || ' '
-      ) > 0
+      where regexp_replace(oportunidades.normalizar_termo(o.titulo || ' ' || coalesce(o.descricao, '')), '[^a-z0-9]+', ' ', 'g')
+            ~ ('(^| )' || busca.termo || 's?( |$)')
     ))
   order by o.prazo, o.id
   limit least(greatest(coalesce(p_limite, 5), 1), 20);
