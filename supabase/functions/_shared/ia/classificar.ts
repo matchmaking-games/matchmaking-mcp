@@ -113,11 +113,14 @@ Campos de "noticia":
     - mudanças de licença, preço ou termos de engines e ferramentas (Unity, Unreal, Godot, GameMaker...)
       e de regras de lojas (Steam, consoles, celular).
   70 a 89: também importa:
-    - terceirização, co-desenvolvimento e serviços entre estúdios: dicas, modelos de trabalho, mercado;
+    - terceirização, co-desenvolvimento e serviços entre estúdios: dicas, modelos de trabalho, mercado,
+      parcerias entre estúdios para produzir um jogo, aquisições e expansões de empresas de terceirização
+      e de serviços de arte (isso mostra para onde vai a demanda por serviços);
     - políticas públicas e fiscais para jogos em outros países;
     - eventos e feiras de negócios do setor;
     - resultados e mudanças das grandes plataformas onde se publica jogos (Steam, Xbox, PlayStation,
-      Nintendo, Roblox, lojas de celular);
+      Nintendo, Roblox, lojas de celular), inclusive relatórios trimestrais de receita e de jogadores
+      dessas plataformas, porque mostram onde vale publicar;
     - leis e regulação de apostas que podem afetar jogos;
     - publishers e investidores mudando o que procuram; artigos práticos de gestão, produção e
       financiamento para estúdios.
