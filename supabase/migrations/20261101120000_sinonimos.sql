@@ -23,13 +23,11 @@ grant execute on function oportunidades.normalizar_termo(text) to service_role;
 
 comment on function oportunidades.normalizar_termo(text) is 'Termo sem espaços nas pontas, sem acentos e em minúsculas, para comparar buscas e sinônimos.';
 
--- A coluna normalizada passa a ignorar acentos. O índice único que dependia dela cai junto e volta abaixo.
-alter table oportunidades.sinonimos drop column termo_normalizado;
+-- A coluna normalizada passa a ignorar acentos (Postgres 17: troca a regra sem apagar a coluna;
+-- o índice único que usa a coluna continua valendo).
 alter table oportunidades.sinonimos
-  add column termo_normalizado text generated always as (oportunidades.normalizar_termo(termo)) stored;
+  alter column termo_normalizado set expression as (oportunidades.normalizar_termo(termo));
 
-create unique index sinonimos_termo_alvo_idx
-  on oportunidades.sinonimos (termo_normalizado, coalesce(habilidade_id, tipo_funcao_id));
 create index sinonimos_termo_normalizado_idx on oportunidades.sinonimos (termo_normalizado);
 
 insert into oportunidades.sinonimos (termo, idioma, habilidade_id)
