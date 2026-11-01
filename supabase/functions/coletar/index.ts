@@ -12,6 +12,7 @@ interface Contexto {
   jaVistos: Set<string>
   classificar: Classificar
   ate: number
+  recentes: Array<{ id: string; titulo: string }>
 }
 
 interface Leitor {
@@ -88,18 +89,26 @@ Deno.serve(async (req) => {
         if (!leitor) throw new Error(`Leitor desconhecido: ${fonte.leitor}`)
 
         const vistos = await sql`select id_externo from oportunidades.itens_brutos where fonte_id = ${fonte.fonte_id} and id_externo is not null`
+        // Notícias dos últimos 7 dias, de todas as fontes, para a IA apontar a mesma história.
+        const recentes = await sql`
+          select id, titulo from oportunidades.noticias
+          where situacao in ('publicada', 'em_fila') and criado_em > now() - interval '7 days'
+          order by criado_em desc limit 60`
         const contexto: Contexto = {
           jaVistos: new Set(vistos.map((linha) => linha.id_externo as string)),
           classificar,
           ate: inicio + TEMPO_MAXIMO_MS - 15_000,
+          recentes: recentes.map((linha) => ({ id: linha.id as string, titulo: linha.titulo as string })),
         }
 
         const itens = await leitor.ler(fonte.configuracao, buscar, hojeEmBrasilia(), contexto)
         let novos = 0
+        const noticias: Record<string, number> = {}
         for (const item of itens) {
-          // Item sem candidato já chega fechado, com o motivo dado pelo leitor: descartado (fora do escopo,
-          // notícia guardada para depois), que não conta contra a fonte, ou recusado (veio com defeito), que conta.
-          const situacao = item.candidato ? 'pendente' : item.problema ? 'rejeitado' : item.motivo ? 'descartado' : 'pendente'
+          // Item sem candidato já chega fechado, com o motivo dado pelo leitor: descartado (fora do escopo),
+          // que não conta contra a fonte, ou recusado (veio com defeito), que conta. Notícia segue para a área
+          // de notícias, onde o banco decide se ela entra, vai para a fila ou é descartada.
+          const situacao = item.candidato ? 'pendente' : item.noticia ? 'processado' : item.problema ? 'rejeitado' : item.motivo ? 'descartado' : 'pendente'
           const motivo = item.candidato ? null : ((item.problema ?? item.motivo)?.slice(0, 2000) ?? null)
           const inseridos = await sql`
             insert into oportunidades.itens_brutos (fonte_id, id_externo, conteudo, hash_conteudo, candidato, situacao, motivo, processado_em)
@@ -109,6 +118,16 @@ Deno.serve(async (req) => {
             on conflict (fonte_id, hash_conteudo) do nothing
             returning id`
           novos += inseridos.length
+
+          const n = item.noticia
+          if (n && inseridos[0]) {
+            const [registro] = await sql`
+              select oportunidades.registrar_noticia(
+                ${fonte.fonte_id}, ${inseridos[0].id}, ${n.titulo}, ${n.titulo_original}, ${n.link}, ${n.resumo},
+                ${n.idioma}, ${n.publicada_em}::timestamptz, ${n.nota}, ${n.motivo}, ${n.duplicata_de}::uuid
+              ) as situacao`
+            noticias[registro.situacao] = (noticias[registro.situacao] ?? 0) + 1
+          }
         }
 
         let encerradas = 0
@@ -133,7 +152,7 @@ Deno.serve(async (req) => {
         }
 
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, null, ${itens.length}, ${novos})`
-        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas, renovadas })
+        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas, renovadas, noticias })
       } catch (erro) {
         const mensagem = erro instanceof Error ? erro.message : String(erro)
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, ${mensagem})`

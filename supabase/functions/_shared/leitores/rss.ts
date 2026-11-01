@@ -13,11 +13,21 @@ export const MAXIMO_POR_LEITURA = 8
 
 const LIMITE_TEXTO = 8000
 
+// Primeira camada do filtro, sem IA: palavras no título que indicam conteúdo para quem joga, não para
+// quem faz jogos. A lista é curta de propósito, porque perder uma notícia importante é pior do que
+// gastar uma chamada de IA; a auditoria semanal confere o que estas regras descartam.
+export const PALAVRAS_IGNORADAS = [
+  'review', 'reviews', 'trailer', 'gameplay', 'promocao', 'desconto', 'cupom', 'ofertas',
+  'discount', 'detonado', 'walkthrough', 'tier list', 'unboxing',
+]
+
 export interface ContextoRss {
   jaVistos: Set<string>
   classificar: Classificar
   // Horário (em milissegundos) a partir do qual não se começa outra notícia.
   ate?: number
+  // Notícias registradas nos últimos dias, para a IA apontar a mesma história.
+  recentes?: Array<{ id: string; titulo: string }>
 }
 
 export interface ItemDoFeed {
@@ -39,6 +49,22 @@ export function decodificar(texto: string): string {
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
+}
+
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
+// Devolve a palavra que faz o título ser ignorado, ou null.
+export function palavraIgnorada(titulo: string, extras: string[] = []): string | null {
+  const texto = ` ${normalizar(titulo).replace(/[^a-z0-9]+/g, ' ')} `
+  return [...PALAVRAS_IGNORADAS, ...extras.map(normalizar)].find((palavra) => texto.includes(` ${palavra} `)) ?? null
+}
+
+function dataISO(texto: string | undefined): string | null {
+  if (!texto) return null
+  const data = new Date(texto)
+  return Number.isNaN(data.getTime()) ? null : data.toISOString()
 }
 
 function semTags(html: string): string {
@@ -94,6 +120,9 @@ function somarDias(dataISO: string, dias: number): string {
 
 export async function lerRss(configuracao: unknown, buscar: Buscar, hojeISO: string, contexto: ContextoRss): Promise<ItemLido[]> {
   const url = (configuracao as { url?: unknown } | null)?.url
+  const ignorar = (configuracao as { ignorar?: unknown } | null)?.ignorar
+  const extras = Array.isArray(ignorar) ? ignorar.filter((palavra): palavra is string => typeof palavra === 'string') : []
+  const recentes = contexto.recentes ?? []
   if (typeof url !== 'string' || !/^https:\/\//.test(url)) throw new Error('Configuração da fonte sem "url" https do feed')
 
   const resposta = await buscar(url)
@@ -108,11 +137,19 @@ export async function lerRss(configuracao: unknown, buscar: Buscar, hojeISO: str
 
   for (const item of novos) {
     if (contexto.ate !== undefined && Date.now() > contexto.ate) break
+    const palavra = palavraIgnorada(item.titulo, extras)
+    if (palavra) {
+      itens.push({ id_externo: item.id, conteudo: { feed: item, regra: palavra }, candidato: null, motivo: `Regra por palavra: "${palavra}" no título` })
+      continue
+    }
     try {
       const pagina = await buscar(item.link)
       if (!pagina.ok) throw new Error(`a página respondeu ${pagina.status}`)
       const texto = textoDaPagina(await pagina.text()) || item.resumo || ''
-      const classificacao = await contexto.classificar({ titulo: item.titulo, link: item.link, publicado_em: item.publicado_em, texto, hojeISO })
+      const classificacao = await contexto.classificar({
+        titulo: item.titulo, link: item.link, publicado_em: item.publicado_em, texto, hojeISO,
+        recentes: recentes.map((recente) => recente.titulo),
+      })
       const conteudo = { feed: item, texto, ia: classificacao }
       const o = classificacao.oportunidade
 
@@ -129,11 +166,26 @@ export async function lerRss(configuracao: unknown, buscar: Buscar, hojeISO: str
           ...(o.descricao ? { descricao: o.descricao } : {}),
         }
         itens.push({ id_externo: item.id, conteudo, candidato })
+      } else if (classificacao.classe === 'noticia' && classificacao.noticia) {
+        const n = classificacao.noticia
+        itens.push({
+          id_externo: item.id,
+          conteudo,
+          candidato: null,
+          noticia: {
+            titulo: n.titulo_pt,
+            titulo_original: item.titulo,
+            link: item.link,
+            resumo: n.resumo,
+            idioma: n.idioma_original,
+            publicada_em: dataISO(item.publicado_em),
+            nota: n.nota,
+            motivo: classificacao.motivo,
+            duplicata_de: n.duplicata ? (recentes[n.duplicata - 1]?.id ?? null) : null,
+          },
+        })
       } else {
-        const motivo = classificacao.classe === 'noticia'
-          ? `Notícia útil para quem faz jogos, guardada para a área de notícias: ${classificacao.motivo}`
-          : `Fora do escopo: ${classificacao.motivo}`
-        itens.push({ id_externo: item.id, conteudo, candidato: null, motivo })
+        itens.push({ id_externo: item.id, conteudo, candidato: null, motivo: `Fora do escopo: ${classificacao.motivo}` })
       }
     } catch (erro) {
       erros.push(`${item.link}: ${erro instanceof Error ? erro.message : String(erro)}`)

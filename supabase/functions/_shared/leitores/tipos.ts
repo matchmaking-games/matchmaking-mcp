@@ -16,6 +16,19 @@ export interface Candidato {
   descricao?: string
 }
 
+// Notícia avaliada pela IA, a caminho da área de notícias (o banco decide se entra, vai para a fila ou sai).
+export interface NoticiaLida {
+  titulo: string
+  titulo_original: string
+  link: string
+  resumo: string
+  idioma: 'pt' | 'en'
+  publicada_em: string | null
+  nota: number
+  motivo: string
+  duplicata_de: string | null
+}
+
 export interface ItemLido {
   id_externo: string
   conteudo: unknown
@@ -24,6 +37,8 @@ export interface ItemLido {
   motivo?: string
   // Quando o item veio com defeito (linha mal preenchida): vai para os recusados e conta contra a fonte.
   problema?: string
+  // Quando o item é uma notícia: vai para a área de notícias.
+  noticia?: NoticiaLida
 }
 
 // Busca HTTP injetável, para os testes não dependerem da rede.
