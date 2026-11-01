@@ -56,7 +56,7 @@ from (values
   ('meetups', 'evento'), ('conferencia', 'evento'), ('conferencias', 'evento'), ('encontro', 'evento'), ('encontros', 'evento'),
   ('festival', 'chamada_festival_vitrine'), ('festivais', 'chamada_festival_vitrine'), ('showcase', 'chamada_festival_vitrine'),
   ('showcases', 'chamada_festival_vitrine'), ('vitrine', 'chamada_festival_vitrine'), ('vitrines', 'chamada_festival_vitrine'),
-  ('mostra', 'chamada_festival_vitrine'), ('mostras', 'chamada_festival_vitrine'),
+  ('mostras', 'chamada_festival_vitrine'),
   ('curso', 'curso_capacitacao'), ('cursos', 'curso_capacitacao'), ('capacitacao', 'curso_capacitacao'),
   ('capacitacoes', 'curso_capacitacao'), ('oficina', 'curso_capacitacao'), ('oficinas', 'curso_capacitacao'),
   ('workshop', 'curso_capacitacao'), ('workshops', 'curso_capacitacao'), ('treinamento', 'curso_capacitacao'),
