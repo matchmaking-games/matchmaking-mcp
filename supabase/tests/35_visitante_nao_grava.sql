@@ -59,7 +59,8 @@ declare
   abertas_a_anon text;
   tabelas_abertas text;
 begin
-  -- A busca grava só termos sem resultado, sem identificar a pessoa, e serve aos visitantes.
+  -- A busca grava só termos sem resultado, sem identificar a pessoa, e o registro de uso mexe só no
+  -- contador da própria pessoa. Os dois servem aos visitantes.
   select string_agg(n.nspname || '.' || p.proname, ', ') into sem_barreira
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
@@ -67,7 +68,7 @@ begin
     and p.provolatile = 'v'
     and has_function_privilege('authenticated', p.oid, 'execute')
     and p.prosrc !~ 'oportunidades\.exigir_conta\(\)'
-    and (n.nspname, p.proname) not in (('vitrine', 'buscar_oportunidades'), ('vitrine', 'pesquisar_oportunidades'));
+    and (n.nspname, p.proname) not in (('vitrine', 'buscar_oportunidades'), ('vitrine', 'pesquisar_oportunidades'), ('vitrine', 'registrar_uso'));
   if sem_barreira is not null then
     raise exception 'FALHA: função que pode gravar sem chamar exigir_conta: %', sem_barreira;
   end if;

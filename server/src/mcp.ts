@@ -4,11 +4,13 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { extrairToken, type VerificarToken } from './autenticacao.js'
 import { criarServidorMcp } from './ferramentas.js'
 import { urlDosMetadados } from './metadados.js'
+import type { RegistrarUso } from './uso.js'
 import type { ConsultarVitrine } from './vitrine.js'
 
 export interface DependenciasMcp {
   verificarToken: VerificarToken
   consultarVitrine: ConsultarVitrine
+  registrarUso: RegistrarUso
 }
 
 export const CABECALHOS_CORS: Record<string, string> = {
@@ -61,7 +63,7 @@ export async function tratarRequisicaoMcp(request: Request, dependencias: Depend
     return respostaJson(405, { error: 'method_not_allowed' }, { Allow: 'POST, OPTIONS' })
   }
 
-  const servidor = criarServidorMcp(usuario, token, dependencias.consultarVitrine)
+  const servidor = criarServidorMcp(usuario, token, dependencias.consultarVitrine, dependencias.registrarUso)
   const transporte = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
   await servidor.connect(transporte)
   try {

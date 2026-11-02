@@ -1,6 +1,7 @@
 import { criarVerificadorSupabase } from '../src/autenticacao.js'
 import { ErroConfiguracao, lerConfiguracao } from '../src/config.js'
 import { comCors, tratarRequisicaoMcp, type DependenciasMcp } from '../src/mcp.js'
+import { criarRegistroDeUso } from '../src/uso.js'
 import { criarConsultaVitrine } from '../src/vitrine.js'
 
 let dependencias: DependenciasMcp | undefined
@@ -11,6 +12,7 @@ function obterDependencias(): DependenciasMcp {
     dependencias = {
       verificarToken: criarVerificadorSupabase(config),
       consultarVitrine: criarConsultaVitrine(config),
+      registrarUso: criarRegistroDeUso(config),
     }
   }
   return dependencias

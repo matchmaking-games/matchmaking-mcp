@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Usuario } from '../src/autenticacao.js'
 import { tratarRequisicaoMcp, type DependenciasMcp } from '../src/mcp.js'
+import type { RegistrarUso } from '../src/uso.js'
 import { ErroVitrine, type FiltrosVitrine, type Interpretacao, type OportunidadeVitrine } from '../src/vitrine.js'
 
 interface RespostaJsonRpc {
@@ -47,6 +48,7 @@ function dependencias(
   consultas: FiltrosVitrine[] = [],
   resultado: OportunidadeVitrine[] | Error = [exemplo],
   interpretacao: Interpretacao = interpretacaoSimples,
+  registrarUso: RegistrarUso = async () => true,
 ): DependenciasMcp {
   return {
     verificarToken: async (token) => (token === 'valido' ? usuario : null),
@@ -55,6 +57,7 @@ function dependencias(
       if (resultado instanceof Error) throw resultado
       return { interpretacao, resultados: resultado }
     },
+    registrarUso,
   }
 }
 
@@ -232,5 +235,78 @@ describe('ferramentas', () => {
 
     expect(resposta.result?.isError).toBe(true)
     expect(resposta.result?.content?.[0]?.text).toContain('Não consegui consultar')
+  })
+})
+
+describe('registro de uso e limite', () => {
+  it.each(['o_que_posso_fazer', 'buscar_oportunidades'])('%s conta a chamada com o acesso da pessoa, sem o conteúdo', async (ferramenta) => {
+    const chamadas: unknown[][] = []
+    await tratarRequisicaoMcp(
+      requisicao(chamarFerramenta(ferramenta), 'valido'),
+      dependencias(visitante, [], [exemplo], interpretacaoSimples, async (...argumentos) => {
+        chamadas.push(argumentos)
+        return true
+      }),
+    )
+
+    expect(chamadas).toEqual([['valido', ferramenta]])
+  })
+
+  it('listar as ferramentas não conta como uso', async () => {
+    const chamadas: unknown[][] = []
+    await tratarRequisicaoMcp(
+      requisicao({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, 'valido'),
+      dependencias(visitante, [], [exemplo], interpretacaoSimples, async (...argumentos) => {
+        chamadas.push(argumentos)
+        return true
+      }),
+    )
+
+    expect(chamadas).toEqual([])
+  })
+
+  it('no limite, o visitante recebe o aviso e o convite para entrar, e a busca não roda', async () => {
+    const consultas: FiltrosVitrine[] = []
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(
+        requisicao(chamarFerramenta('buscar_oportunidades'), 'valido'),
+        dependencias(visitante, consultas, [exemplo], interpretacaoSimples, async () => false),
+      ),
+    )
+
+    expect(consultas).toEqual([])
+    expect(resposta.result?.isError).toBe(true)
+    expect(resposta.result?.content?.[0]?.text).toContain('limite de uso de hoje')
+    expect(resposta.result?.content?.[0]?.text).toContain('entra com uma conta')
+  })
+
+  it('no limite, a conta recebe o aviso sem o convite', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(
+        requisicao(chamarFerramenta('o_que_posso_fazer'), 'valido'),
+        dependencias(conta, [], [exemplo], interpretacaoSimples, async () => false),
+      ),
+    )
+
+    expect(resposta.result?.content?.[0]?.text).toContain('limite de uso de hoje')
+    expect(resposta.result?.content?.[0]?.text).not.toContain('entra com uma conta')
+  })
+
+  it('se o registro falhar, a ferramenta continua funcionando', async () => {
+    const consultas: FiltrosVitrine[] = []
+    const aviso = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(
+        requisicao(chamarFerramenta('buscar_oportunidades'), 'valido'),
+        dependencias(visitante, consultas, [exemplo], interpretacaoSimples, async () => {
+          throw new Error('fora do ar')
+        }),
+      ),
+    )
+
+    expect(consultas).toHaveLength(1)
+    expect(resposta.result?.isError).toBeUndefined()
+    expect(aviso).toHaveBeenCalled()
+    aviso.mockRestore()
   })
 })
