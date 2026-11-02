@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { Usuario } from './autenticacao.js'
 import { TIPOS_OPORTUNIDADE, UFS } from './contrato.js'
+import type { RegistrarUso } from './uso.js'
 import { ErroVitrine, type ConsultarVitrine, type Interpretacao, type OportunidadeVitrine } from './vitrine.js'
 
 export const INSTRUCOES = [
@@ -124,8 +125,31 @@ export function textoOQuePossoFazer(usuario: Usuario): string {
   ].join('\n\n')
 }
 
-export function criarServidorMcp(usuario: Usuario, token: string, consultarVitrine: ConsultarVitrine): McpServer {
+export function textoLimiteDeUso(usuario: Usuario): string {
+  const convite = usuario.visitante ? ' Quem entra com uma conta da Matchmaking tem um limite maior.' : ''
+  return `Você chegou ao limite de uso de hoje. O limite volta amanhã.${convite}`
+}
+
+export function criarServidorMcp(
+  usuario: Usuario,
+  token: string,
+  consultarVitrine: ConsultarVitrine,
+  registrarUso: RegistrarUso,
+): McpServer {
   const servidor = new McpServer({ name: 'matchmaking', version: '0.1.0' }, { instructions: INSTRUCOES })
+
+  // Toda ferramenta começa aqui. Se o registro falhar, a ferramenta continua funcionando: o limite existe
+  // para proteger o serviço, e uma falha nele não pode tirar a busca do ar.
+  async function dentroDoLimite(ferramenta: string): Promise<boolean> {
+    try {
+      return await registrarUso(token, ferramenta)
+    } catch (erro) {
+      console.error('Falha ao registrar o uso:', ferramenta, erro instanceof Error ? erro.message : 'erro desconhecido')
+      return true
+    }
+  }
+
+  const respostaDeLimite = () => ({ isError: true, content: [{ type: 'text' as const, text: textoLimiteDeUso(usuario) }] })
 
   servidor.registerTool(
     'o_que_posso_fazer',
@@ -135,7 +159,10 @@ export function criarServidorMcp(usuario: Usuario, token: string, consultarVitri
         'Explica, em linguagem simples, o que dá para fazer com a Matchmaking e se a pessoa está conectada com conta ou como visitante. Use quando a pessoa perguntar o que este conector faz.',
       annotations: SOMENTE_LEITURA,
     },
-    async () => ({ content: [{ type: 'text', text: textoOQuePossoFazer(usuario) }] }),
+    async () => {
+      if (!(await dentroDoLimite('o_que_posso_fazer'))) return respostaDeLimite()
+      return { content: [{ type: 'text', text: textoOQuePossoFazer(usuario) }] }
+    },
   )
 
   servidor.registerTool(
@@ -153,6 +180,8 @@ export function criarServidorMcp(usuario: Usuario, token: string, consultarVitri
       annotations: SOMENTE_LEITURA,
     },
     async ({ tipo, uf, texto, limite }) => {
+      if (!(await dentroDoLimite('buscar_oportunidades'))) return respostaDeLimite()
+
       let pesquisa
       try {
         pesquisa = await consultarVitrine(token, { tipo, uf, texto, limite })
