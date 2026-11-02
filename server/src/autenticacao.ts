@@ -12,10 +12,12 @@ export interface Usuario {
   expiraEm: number
 }
 
-export type VerificarToken = (token: string) => Promise<Usuario | null>
+// `publico`: o endereço deste servidor. O acesso precisa ter sido emitido para ele.
+export type VerificarToken = (token: string, publico: string) => Promise<Usuario | null>
 
 const claimsSchema = z.object({
   iss: z.string(),
+  aud: z.union([z.string(), z.array(z.string())]),
   sub: z.string().min(1),
   role: z.literal('authenticated'),
   exp: z.number(),
@@ -28,9 +30,10 @@ const claimsSchema = z.object({
   scope: z.string().optional(),
 })
 
-export function lerUsuarioDosClaims(claims: unknown, emissor: string): Usuario | null {
+export function lerUsuarioDosClaims(claims: unknown, emissor: string, publico: string): Usuario | null {
   const lido = claimsSchema.safeParse(claims)
   if (!lido.success || lido.data.iss !== emissor) return null
+  if (![lido.data.aud].flat().includes(publico)) return null
   const metodos = (lido.data.amr ?? []).map((entrada) => (typeof entrada === 'string' ? entrada : entrada.method))
   return {
     id: lido.data.sub,
@@ -46,10 +49,10 @@ export type ObterClaims = (token: string) => Promise<unknown>
 
 // Qualquer falha ao conferir (acesso malformado, rede, chave) conta como acesso inválido.
 export function criarVerificador(obterClaims: ObterClaims, emissor: string): VerificarToken {
-  return async (token) => {
+  return async (token, publico) => {
     try {
       const claims = await obterClaims(token)
-      return claims ? lerUsuarioDosClaims(claims, emissor) : null
+      return claims ? lerUsuarioDosClaims(claims, emissor, publico) : null
     } catch {
       return null
     }

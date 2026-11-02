@@ -3,9 +3,11 @@ import { criarVerificador, extrairToken, lerUsuarioDosClaims } from '../src/aute
 import { ErroConfiguracao, emissorDoSupabase, lerConfiguracao } from '../src/config.js'
 
 const EMISSOR = 'https://exemplo.supabase.co/auth/v1'
+const PUBLICO = 'https://mcp-dev.matchmaking.games/mcp'
 
 const claims = {
   iss: EMISSOR,
+  aud: PUBLICO,
   sub: '00000000-0000-4000-8000-000000000001',
   role: 'authenticated',
   exp: 4102444800,
@@ -16,7 +18,7 @@ const claims = {
 
 describe('lerUsuarioDosClaims', () => {
   it('reconhece um visitante conectado por um aplicativo', () => {
-    expect(lerUsuarioDosClaims(claims, EMISSOR)).toEqual({
+    expect(lerUsuarioDosClaims(claims, EMISSOR, PUBLICO)).toEqual({
       id: claims.sub,
       visitante: true,
       clientId: 'cliente-1',
@@ -26,15 +28,19 @@ describe('lerUsuarioDosClaims', () => {
   })
 
   it('reconhece uma conta', () => {
-    expect(lerUsuarioDosClaims({ ...claims, is_anonymous: false }, EMISSOR)?.visitante).toBe(false)
+    expect(lerUsuarioDosClaims({ ...claims, is_anonymous: false }, EMISSOR, PUBLICO)?.visitante).toBe(false)
   })
 
   it('reconhece o visitante pelo método de login quando is_anonymous não vem', () => {
     const semMarcador = { ...claims, is_anonymous: undefined }
 
-    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'anonymous', timestamp: 1 }] }, EMISSOR)?.visitante).toBe(true)
-    expect(lerUsuarioDosClaims({ ...semMarcador, amr: ['anonymous'] }, EMISSOR)?.visitante).toBe(true)
-    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'password', timestamp: 1 }] }, EMISSOR)?.visitante).toBe(false)
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'anonymous', timestamp: 1 }] }, EMISSOR, PUBLICO)?.visitante).toBe(true)
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: ['anonymous'] }, EMISSOR, PUBLICO)?.visitante).toBe(true)
+    expect(lerUsuarioDosClaims({ ...semMarcador, amr: [{ method: 'password', timestamp: 1 }] }, EMISSOR, PUBLICO)?.visitante).toBe(false)
+  })
+
+  it('aceita o público também numa lista', () => {
+    expect(lerUsuarioDosClaims({ ...claims, aud: ['outro', PUBLICO] }, EMISSOR, PUBLICO)?.id).toBe(claims.sub)
   })
 
   const recusados: Array<[string, Record<string, unknown>]> = [
@@ -42,29 +48,32 @@ describe('lerUsuarioDosClaims', () => {
     ['de outro emissor', { iss: 'https://outro.supabase.co/auth/v1' }],
     ['com papel anon', { role: 'anon' }],
     ['sem identificação', { sub: '' }],
+    ['emitido com o público padrão', { aud: 'authenticated' }],
+    ['emitido para outro servidor', { aud: 'https://mcp.matchmaking.games/mcp' }],
+    ['sem público', { aud: undefined }],
   ]
 
   it.each(recusados)('recusa acesso %s', (_caso, mudanca) => {
-    expect(lerUsuarioDosClaims({ ...claims, ...mudanca }, EMISSOR)).toBeNull()
+    expect(lerUsuarioDosClaims({ ...claims, ...mudanca }, EMISSOR, PUBLICO)).toBeNull()
   })
 })
 
 describe('criarVerificador', () => {
   it('aceita um acesso conferido', async () => {
     const verificar = criarVerificador(async () => claims, EMISSOR)
-    expect((await verificar('token'))?.clientId).toBe('cliente-1')
+    expect((await verificar('token', PUBLICO))?.clientId).toBe('cliente-1')
   })
 
   it('trata acesso recusado pelo Supabase como inválido', async () => {
     const verificar = criarVerificador(async () => null, EMISSOR)
-    expect(await verificar('token')).toBeNull()
+    expect(await verificar('token', PUBLICO)).toBeNull()
   })
 
   it('trata acesso malformado, que faz o Supabase lançar erro, como inválido', async () => {
     const verificar = criarVerificador(async () => {
       throw new SyntaxError('Unexpected token')
     }, EMISSOR)
-    expect(await verificar('abc.def.ghi')).toBeNull()
+    expect(await verificar('abc.def.ghi', PUBLICO)).toBeNull()
   })
 })
 
