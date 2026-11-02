@@ -42,6 +42,11 @@ export function formatarData(iso: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
+// Data de um instante no horário de Brasília.
+export function formatarDataHora(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(new Date(iso))
+}
+
 export function descreverRegiao(oportunidade: Pick<OportunidadeVitrine, 'abrangencia' | 'ufs'>): string {
   switch (oportunidade.abrangencia) {
     case 'estado':
@@ -60,7 +65,7 @@ export function formatarOportunidade(oportunidade: OportunidadeVitrine, posicao:
     encerramento_inscricoes: `Inscrições até ${formatarData(oportunidade.prazo)}`,
     data_do_evento: `Data: ${formatarData(oportunidade.prazo)}`,
     vaga_aberta: 'Vaga aberta enquanto estiver no site de quem oferece',
-    aberta_sem_data: 'Inscrições abertas, sem data de encerramento informada (conferimos de tempos em tempos)',
+    aberta_sem_data: 'Inscrições abertas, sem data de encerramento informada (conferimos toda semana)',
   }[oportunidade.natureza_prazo]
   const linhas = [
     `${posicao}. ${oportunidade.titulo}`,
@@ -71,6 +76,7 @@ export function formatarOportunidade(oportunidade: OportunidadeVitrine, posicao:
   if (oportunidade.publico_especifico) linhas.push(`   Público: ${oportunidade.publico_especifico}`)
   if (oportunidade.descricao) linhas.push(`   ${oportunidade.descricao}`)
   linhas.push(`   Link oficial: ${oportunidade.link_oficial}`)
+  if (oportunidade.conferida_em) linhas.push(`   Link conferido em ${formatarDataHora(oportunidade.conferida_em)}`)
   return linhas.join('\n')
 }
 

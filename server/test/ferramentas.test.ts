@@ -47,3 +47,10 @@ describe('formatação', () => {
     )
   })
 })
+
+describe('data da conferência', () => {
+  it('mostra quando o link foi conferido, no horário de Brasília', () => {
+    expect(formatarOportunidade({ ...evento, conferida_em: '2026-11-02T02:00:00+00:00' }, 1)).toContain('Link conferido em 01/11/2026')
+    expect(formatarOportunidade({ ...evento, conferida_em: null }, 1)).not.toContain('conferido')
+  })
+})

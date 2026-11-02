@@ -18,6 +18,7 @@ export const oportunidadeVitrineSchema = z.object({
   valor: z.string().nullable(),
   publico_especifico: z.string().nullable(),
   fonte: z.string(),
+  conferida_em: z.string().nullish(),
 })
 
 export type OportunidadeVitrine = z.infer<typeof oportunidadeVitrineSchema>
