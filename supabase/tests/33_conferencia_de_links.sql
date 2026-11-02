@@ -9,7 +9,7 @@ insert into oportunidades.fontes (id, nome, leitor) values
 
 insert into oportunidades.itens_brutos (id, fonte_id, conteudo, hash_conteudo, situacao) values
   ('00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000e1',
-   '{"feed": {"link": "https://noticia.test/a", "publicado_em": "2026-10-20T12:00:00Z"}}', 'hash-a', 'processado');
+   '{"feed": {"link": "https://noticia.test/a", "publicado_em": "2026-10-20T12:00:00Z"}}', repeat('a', 64), 'processado');
 
 create temp table casos (codigo text primary key, id uuid not null default gen_random_uuid());
 insert into casos (codigo) values ('com_noticia'), ('sem_noticia'), ('nova'), ('moderada'), ('sem_data'), ('com_prazo'), ('vencida'), ('encerrada');
