@@ -58,6 +58,22 @@ export type ConsultarVitrine = (token: string, filtros: FiltrosVitrine) => Promi
 
 export type VerOportunidade = (token: string, id: string) => Promise<OportunidadeVitrine | null>
 
+export const noticiaSchema = z.object({
+  id: z.string(),
+  titulo: z.string(),
+  titulo_original: z.string().nullable(),
+  link: z.string(),
+  resumo: z.string().nullable(),
+  idioma_original: z.string(),
+  publicada_na_fonte_em: z.string().nullable(),
+  fonte: z.string(),
+  tambem_em: z.array(z.string()),
+})
+
+export type Noticia = z.infer<typeof noticiaSchema>
+
+export type ConsultarNovidades = (token: string, limite: number) => Promise<Noticia[]>
+
 export class ErroVitrine extends Error {}
 
 function clienteDaPessoa(config: Configuracao, token: string) {
@@ -90,5 +106,13 @@ export function criarVerOportunidade(config: Configuracao): VerOportunidade {
     const { data, error } = await clienteDaPessoa(config, token).schema('vitrine').rpc('ver_oportunidade', { p_id: id })
     if (error) throw new ErroVitrine(error.message)
     return data ? oportunidadeVitrineSchema.parse(data) : null
+  }
+}
+
+export function criarConsultaNovidades(config: Configuracao): ConsultarNovidades {
+  return async (token, limite) => {
+    const { data, error } = await clienteDaPessoa(config, token).schema('vitrine').rpc('novidades_do_setor', { p_limite: limite })
+    if (error) throw new ErroVitrine(error.message)
+    return z.array(noticiaSchema).parse(data)
   }
 }

@@ -2,7 +2,7 @@ import { criarVerificadorSupabase } from '../src/autenticacao.js'
 import { ErroConfiguracao, lerConfiguracao } from '../src/config.js'
 import { comCors, tratarRequisicaoMcp, type DependenciasMcp } from '../src/mcp.js'
 import { criarRegistroDeUso } from '../src/uso.js'
-import { criarConsultaVitrine, criarVerOportunidade } from '../src/vitrine.js'
+import { criarConsultaNovidades, criarConsultaVitrine, criarVerOportunidade } from '../src/vitrine.js'
 
 let dependencias: DependenciasMcp | undefined
 
@@ -13,6 +13,7 @@ function obterDependencias(): DependenciasMcp {
       verificarToken: criarVerificadorSupabase(config),
       consultarVitrine: criarConsultaVitrine(config),
       verOportunidade: criarVerOportunidade(config),
+      consultarNovidades: criarConsultaNovidades(config),
       registrarUso: criarRegistroDeUso(config),
     }
   }

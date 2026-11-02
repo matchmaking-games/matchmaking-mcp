@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Usuario } from '../src/autenticacao.js'
 import { tratarRequisicaoMcp, type DependenciasMcp } from '../src/mcp.js'
 import type { RegistrarUso } from '../src/uso.js'
-import { ErroVitrine, type FiltrosVitrine, type Interpretacao, type OportunidadeVitrine } from '../src/vitrine.js'
+import { ErroVitrine, type FiltrosVitrine, type Interpretacao, type Noticia, type OportunidadeVitrine } from '../src/vitrine.js'
 
 interface RespostaJsonRpc {
   result?: {
@@ -33,6 +33,18 @@ const exemplo: OportunidadeVitrine = {
   fonte: 'Exemplos da Matchmaking (dados fictícios)',
 }
 
+const noticia: Noticia = {
+  id: 'n-1',
+  titulo: 'Edital de jogos abre inscrições',
+  titulo_original: null,
+  link: 'https://exemplo.org/noticia',
+  resumo: 'Resumo da notícia.',
+  idioma_original: 'pt',
+  publicada_na_fonte_em: '2026-11-02T15:00:00+00:00',
+  fonte: 'Fonte de notícias',
+  tambem_em: ['Outra fonte'],
+}
+
 const interpretacaoSimples: Interpretacao = {
   termos: [],
   correcoes: [],
@@ -49,6 +61,7 @@ function dependencias(
   resultado: OportunidadeVitrine[] | Error = [exemplo],
   interpretacao: Interpretacao = interpretacaoSimples,
   registrarUso: RegistrarUso = async () => true,
+  noticias: Noticia[] | Error = [noticia],
 ): DependenciasMcp {
   return {
     verificarToken: async (token) => (token === 'valido' ? usuario : null),
@@ -58,6 +71,10 @@ function dependencias(
       return { interpretacao, resultados: resultado }
     },
     verOportunidade: async (_token, id) => (id === exemplo.id ? { ...exemplo, niveis: ['junior'] } : null),
+    consultarNovidades: async () => {
+      if (noticias instanceof Error) throw noticias
+      return noticias
+    },
     registrarUso,
   }
 }
@@ -130,7 +147,7 @@ describe('ferramentas', () => {
     const lista = await lerJsonRpc(
       await tratarRequisicaoMcp(requisicao({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, 'valido'), dependencias(visitante)),
     )
-    expect(lista.result?.tools?.map((ferramenta) => ferramenta.name)).toEqual(['o_que_posso_fazer', 'buscar_oportunidades', 'ver_oportunidade'])
+    expect(lista.result?.tools?.map((ferramenta) => ferramenta.name)).toEqual(['o_que_posso_fazer', 'buscar_oportunidades', 'ver_oportunidade', 'novidades_do_setor'])
     expect(lista.result?.tools?.every((ferramenta) => ferramenta.annotations?.readOnlyHint === true)).toBe(true)
   })
 
@@ -263,6 +280,34 @@ describe('filtros de público e prazo', () => {
   })
 })
 
+describe('novidades_do_setor', () => {
+  function chamar(noticias: Noticia[] | Error = [noticia]) {
+    return tratarRequisicaoMcp(
+      requisicao(chamarFerramenta('novidades_do_setor'), 'valido'),
+      dependencias(visitante, [], [exemplo], interpretacaoSimples, async () => true, noticias),
+    )
+  }
+
+  it('mostra fonte, data, link, o aviso de IA e quem mais noticiou', async () => {
+    const texto = (await lerJsonRpc(await chamar())).result?.content?.[0]?.text ?? ''
+    expect(texto).toContain('Fonte: Fonte de notícias · Publicada em 02/11/2026')
+    expect(texto).toContain('Resumo escrito por IA: Resumo da notícia.')
+    expect(texto).toContain('Link do original: https://exemplo.org/noticia')
+    expect(texto).toContain('Também noticiado por: Outra fonte')
+  })
+
+  it('diz com franqueza quando não há novidades', async () => {
+    const texto = (await lerJsonRpc(await chamar([]))).result?.content?.[0]?.text
+    expect(texto).toContain('Ainda não há novidades publicadas')
+  })
+
+  it('devolve um erro amigável quando a consulta falha', async () => {
+    const resposta = await lerJsonRpc(await chamar(new ErroVitrine('falhou')))
+    expect(resposta.result?.isError).toBe(true)
+    expect(resposta.result?.content?.[0]?.text).toContain('Não consegui consultar as novidades')
+  })
+})
+
 describe('ver_oportunidade', () => {
   it('mostra os detalhes, com link, fonte, nível e um próximo passo', async () => {
     const resposta = await lerJsonRpc(
@@ -306,6 +351,7 @@ describe('registro de uso e limite', () => {
     ['o_que_posso_fazer', {}],
     ['buscar_oportunidades', {}],
     ['ver_oportunidade', { id: exemplo.id }],
+    ['novidades_do_setor', {}],
   ])('%s conta a chamada com o acesso da pessoa, sem o conteúdo', async (ferramenta, argumentos) => {
     const chamadas: unknown[][] = []
     await tratarRequisicaoMcp(
