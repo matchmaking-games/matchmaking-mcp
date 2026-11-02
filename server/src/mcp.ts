@@ -3,7 +3,7 @@
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { extrairToken, type VerificarToken } from './autenticacao.js'
 import { criarServidorMcp } from './ferramentas.js'
-import { urlDosMetadados } from './metadados.js'
+import { urlDoRecurso, urlDosMetadados } from './metadados.js'
 import type { RegistrarUso } from './uso.js'
 import type { ConsultarVitrine } from './vitrine.js'
 
@@ -55,7 +55,7 @@ export async function tratarRequisicaoMcp(request: Request, dependencias: Depend
   const token = extrairToken(request)
   if (!token) return respostaNaoAutorizado(request, false)
 
-  const usuario = await dependencias.verificarToken(token)
+  const usuario = await dependencias.verificarToken(token, urlDoRecurso(request))
   if (!usuario) return respostaNaoAutorizado(request, true)
 
   // Sem sessão, não há fluxo aberto para GET nem sessão para encerrar com DELETE.
