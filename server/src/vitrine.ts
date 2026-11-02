@@ -17,6 +17,7 @@ export const oportunidadeVitrineSchema = z.object({
   descricao: z.string().nullable(),
   valor: z.string().nullable(),
   publico_especifico: z.string().nullable(),
+  niveis: z.array(z.string()).nullish(),
   fonte: z.string(),
   conferida_em: z.string().nullish(),
 })
@@ -53,14 +54,20 @@ export interface FiltrosVitrine {
 
 export type ConsultarVitrine = (token: string, filtros: FiltrosVitrine) => Promise<Pesquisa>
 
+export type VerOportunidade = (token: string, id: string) => Promise<OportunidadeVitrine | null>
+
 export class ErroVitrine extends Error {}
+
+function clienteDaPessoa(config: Configuracao, token: string) {
+  return createClient(config.supabaseUrl, config.supabaseChavePublica, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+}
 
 export function criarConsultaVitrine(config: Configuracao): ConsultarVitrine {
   return async (token, filtros) => {
-    const supabase = createClient(config.supabaseUrl, config.supabaseChavePublica, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    })
+    const supabase = clienteDaPessoa(config, token)
 
     // A busca roda no banco, com os filtros aplicados antes do limite (no máximo 20 itens).
     const { data, error } = await supabase.schema('vitrine').rpc('pesquisar_oportunidades', {
@@ -71,5 +78,13 @@ export function criarConsultaVitrine(config: Configuracao): ConsultarVitrine {
     })
     if (error) throw new ErroVitrine(error.message)
     return pesquisaSchema.parse(data)
+  }
+}
+
+export function criarVerOportunidade(config: Configuracao): VerOportunidade {
+  return async (token, id) => {
+    const { data, error } = await clienteDaPessoa(config, token).schema('vitrine').rpc('ver_oportunidade', { p_id: id })
+    if (error) throw new ErroVitrine(error.message)
+    return data ? oportunidadeVitrineSchema.parse(data) : null
   }
 }

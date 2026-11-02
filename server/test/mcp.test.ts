@@ -18,7 +18,7 @@ const visitante: Usuario = { id: 'u-1', visitante: true, clientId: 'cliente-1', 
 const conta: Usuario = { ...visitante, id: 'u-2', visitante: false }
 
 const exemplo: OportunidadeVitrine = {
-  id: 'o-1',
+  id: '11111111-1111-4111-8111-111111111111',
   titulo: '[Exemplo] Edital de fomento a jogos independentes de São Paulo',
   tipo: 'edital_fomento',
   link_oficial: 'https://matchmaking.games',
@@ -57,6 +57,7 @@ function dependencias(
       if (resultado instanceof Error) throw resultado
       return { interpretacao, resultados: resultado }
     },
+    verOportunidade: async (_token, id) => (id === exemplo.id ? { ...exemplo, niveis: ['junior'] } : null),
     registrarUso,
   }
 }
@@ -122,14 +123,14 @@ describe('acesso ao /mcp', () => {
 })
 
 describe('ferramentas', () => {
-  it('inicializa e lista as duas ferramentas, só de leitura', async () => {
+  it('inicializa e lista as ferramentas, só de leitura', async () => {
     const inicio = await lerJsonRpc(await tratarRequisicaoMcp(requisicao(INICIALIZAR, 'valido'), dependencias(visitante)))
     expect(inicio.result?.serverInfo?.name).toBe('matchmaking')
 
     const lista = await lerJsonRpc(
       await tratarRequisicaoMcp(requisicao({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, 'valido'), dependencias(visitante)),
     )
-    expect(lista.result?.tools?.map((ferramenta) => ferramenta.name)).toEqual(['o_que_posso_fazer', 'buscar_oportunidades'])
+    expect(lista.result?.tools?.map((ferramenta) => ferramenta.name)).toEqual(['o_que_posso_fazer', 'buscar_oportunidades', 'ver_oportunidade'])
     expect(lista.result?.tools?.every((ferramenta) => ferramenta.annotations?.readOnlyHint === true)).toBe(true)
   })
 
@@ -238,11 +239,53 @@ describe('ferramentas', () => {
   })
 })
 
+describe('ver_oportunidade', () => {
+  it('mostra os detalhes, com link, fonte, nível e um próximo passo', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(requisicao(chamarFerramenta('ver_oportunidade', { id: exemplo.id }), 'valido'), dependencias(visitante)),
+    )
+    const texto = resposta.result?.content?.[0]?.text ?? ''
+    expect(texto.startsWith('[Exemplo] Edital')).toBe(true)
+    expect(texto).toContain('Link oficial: https://matchmaking.games')
+    expect(texto).toContain('Fonte: Exemplos da Matchmaking')
+    expect(texto).toContain('Nível: junior')
+    expect(texto).toContain('Próximo passo:')
+  })
+
+  it('avisa quando a oportunidade não está mais aberta', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(
+        requisicao(chamarFerramenta('ver_oportunidade', { id: '22222222-2222-4222-8222-222222222222' }), 'valido'),
+        dependencias(visitante),
+      ),
+    )
+    expect(resposta.result?.content?.[0]?.text).toContain('não está mais aberta')
+  })
+
+  it('recusa id que não seja o de um resultado', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(requisicao(chamarFerramenta('ver_oportunidade', { id: 'qualquer coisa' }), 'valido'), dependencias(visitante)),
+    )
+    expect(resposta.error !== undefined || resposta.result?.isError === true).toBe(true)
+  })
+
+  it('a busca entrega o id para pedir os detalhes', async () => {
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(requisicao(chamarFerramenta('buscar_oportunidades'), 'valido'), dependencias(visitante)),
+    )
+    expect(resposta.result?.content?.[0]?.text).toContain(`Id para ver_oportunidade (não mostre à pessoa): ${exemplo.id}`)
+  })
+})
+
 describe('registro de uso e limite', () => {
-  it.each(['o_que_posso_fazer', 'buscar_oportunidades'])('%s conta a chamada com o acesso da pessoa, sem o conteúdo', async (ferramenta) => {
+  it.each([
+    ['o_que_posso_fazer', {}],
+    ['buscar_oportunidades', {}],
+    ['ver_oportunidade', { id: exemplo.id }],
+  ])('%s conta a chamada com o acesso da pessoa, sem o conteúdo', async (ferramenta, argumentos) => {
     const chamadas: unknown[][] = []
     await tratarRequisicaoMcp(
-      requisicao(chamarFerramenta(ferramenta), 'valido'),
+      requisicao(chamarFerramenta(ferramenta, argumentos), 'valido'),
       dependencias(visitante, [], [exemplo], interpretacaoSimples, async (...argumentos) => {
         chamadas.push(argumentos)
         return true
