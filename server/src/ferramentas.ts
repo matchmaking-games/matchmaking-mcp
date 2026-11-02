@@ -2,7 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { Usuario } from './autenticacao.js'
-import { TIPOS_OPORTUNIDADE, UFS } from './contrato.js'
+import { PUBLICOS, TIPOS_OPORTUNIDADE, UFS } from './contrato.js'
 import type { RegistrarUso } from './uso.js'
 import { ErroVitrine, type ConsultarVitrine, type Interpretacao, type OportunidadeVitrine, type VerOportunidade } from './vitrine.js'
 
@@ -133,7 +133,7 @@ export function textoOQuePossoFazer(usuario: Usuario): string {
     : 'Você está conectado com a sua conta da Matchmaking.'
   return [
     conexao,
-    'Dá para buscar oportunidades abertas da indústria de games no Brasil (vagas, editais, game jams, eventos, cursos e outras) por tipo, estado e palavra.',
+    'Dá para buscar oportunidades abertas da indústria de games no Brasil (vagas, editais, game jams, eventos, cursos e outras) por tipo, estado, palavra, quem pode participar e prazo, e ver os detalhes de cada uma.',
     'A busca entende português e os termos em inglês da área ("artista de cenário" também encontra vagas de Environment Artist), frases inteiras ("vaga de UI em São Paulo") e erros de digitação.',
     'Cada resultado vem com o prazo, a região, quem pode participar, a fonte e o link oficial para se inscrever.',
     'Me conte o que você procura: função, estado ou tipo de oportunidade. Se tiver dúvida sobre como funciona, é só perguntar.',
@@ -202,16 +202,18 @@ export function criarServidorMcp(usuario: Usuario, token: string, dependencias: 
         tipo: z.enum(TIPOS_OPORTUNIDADE).optional().describe('Tipo de oportunidade, se a pessoa quiser só um.'),
         uf: z.enum(UFS).optional().describe('Sigla do estado onde a pessoa está ou quer participar, por exemplo SP.'),
         texto: z.string().trim().min(2).max(100).optional().describe('O que a pessoa procura, em palavras dela: função, habilidade, tema ou a frase inteira, em português ou inglês.'),
+        publico: z.enum(PUBLICOS).optional().describe('Quem vai participar: pessoa ou empresa (com CNPJ). Itens abertos a ambos também aparecem.'),
+        prazo_em_dias: z.number().int().min(1).max(365).optional().describe('Só o que tem prazo ou data de evento dentro destes dias. Oportunidades sem data informada ficam de fora quando este filtro é usado.'),
         limite: z.number().int().min(1).max(10).default(5).describe('Quantos resultados mostrar, de 1 a 10.'),
       },
       annotations: SOMENTE_LEITURA,
     },
-    async ({ tipo, uf, texto, limite }) => {
+    async ({ tipo, uf, texto, publico, prazo_em_dias, limite }) => {
       if (!(await dentroDoLimite('buscar_oportunidades'))) return respostaDeLimite()
 
       let pesquisa
       try {
-        pesquisa = await consultarVitrine(token, { tipo, uf, texto, limite })
+        pesquisa = await consultarVitrine(token, { tipo, uf, texto, publico, prazoEmDias: prazo_em_dias, limite })
       } catch (erro) {
         if (erro instanceof ErroVitrine) {
           return {

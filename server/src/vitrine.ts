@@ -49,6 +49,8 @@ export interface FiltrosVitrine {
   tipo?: (typeof TIPOS_OPORTUNIDADE)[number]
   uf?: (typeof UFS)[number]
   texto?: string
+  publico?: (typeof PUBLICOS)[number]
+  prazoEmDias?: number
   limite: number
 }
 
@@ -75,6 +77,8 @@ export function criarConsultaVitrine(config: Configuracao): ConsultarVitrine {
       p_uf: filtros.uf ?? null,
       p_texto: filtros.texto ?? null,
       p_limite: filtros.limite,
+      p_publico: filtros.publico ?? null,
+      p_prazo_em_dias: filtros.prazoEmDias ?? null,
     })
     if (error) throw new ErroVitrine(error.message)
     return pesquisaSchema.parse(data)
