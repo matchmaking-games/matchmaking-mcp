@@ -9,7 +9,7 @@ insert into auth.users (id, is_anonymous) values
 do $$
 declare
   conta uuid := '00000000-0000-4000-8000-000000000021';
-  visitante uuid := '00000000-0000-4000-8000-000000000022';
+  convidado uuid := '00000000-0000-4000-8000-000000000022';
   hoje date := (now() at time zone 'America/Sao_Paulo')::date;
   n integer;
   marca boolean;
@@ -23,11 +23,11 @@ begin
     raise exception 'FALHA: a conta deveria ter 2 chamadas e não ser visitante, tem % e %', n, marca;
   end if;
 
-  perform set_config('request.jwt.claims', format('{"sub":"%s"}', visitante), true);
+  perform set_config('request.jwt.claims', format('{"sub":"%s"}', convidado), true);
   if not vitrine.registrar_uso('o_que_posso_fazer') then
     raise exception 'FALHA: o visitante deveria poder usar';
   end if;
-  select chamadas, u.visitante into n, marca from oportunidades.uso_por_pessoa u where user_id = visitante;
+  select chamadas, u.visitante into n, marca from oportunidades.uso_por_pessoa u where user_id = convidado;
   if n is distinct from 1 or marca is distinct from true then
     raise exception 'FALHA: o visitante deveria ter 1 chamada e estar marcado como visitante';
   end if;
@@ -37,19 +37,19 @@ begin
   end if;
 
   -- O limite soma todas as ferramentas do dia.
-  update oportunidades.uso_por_pessoa set chamadas = 98 where user_id = visitante;
-  insert into oportunidades.uso_por_pessoa (dia, user_id, ferramenta, visitante, chamadas) values (hoje, visitante, 'ver_oportunidade', true, 1);
+  update oportunidades.uso_por_pessoa set chamadas = 98 where user_id = convidado;
+  insert into oportunidades.uso_por_pessoa (dia, user_id, ferramenta, visitante, chamadas) values (hoje, convidado, 'ver_oportunidade', true, 1);
   if not vitrine.registrar_uso('ver_oportunidade') then
     raise exception 'FALHA: a 100ª chamada do visitante ainda vale';
   end if;
   if vitrine.registrar_uso('ver_oportunidade') or vitrine.registrar_uso('ferramenta_nova') then
     raise exception 'FALHA: o visitante passou do limite de 100';
   end if;
-  select sum(chamadas) into n from oportunidades.uso_por_pessoa where user_id = visitante;
+  select sum(chamadas) into n from oportunidades.uso_por_pessoa where user_id = convidado;
   if n is distinct from 100 then
     raise exception 'FALHA: acima do limite nada deveria ser gravado, a soma é %', n;
   end if;
-  if exists (select 1 from oportunidades.uso_por_pessoa where user_id = visitante and ferramenta = 'ferramenta_nova') then
+  if exists (select 1 from oportunidades.uso_por_pessoa where user_id = convidado and ferramenta = 'ferramenta_nova') then
     raise exception 'FALHA: acima do limite não pode surgir linha nova';
   end if;
 
