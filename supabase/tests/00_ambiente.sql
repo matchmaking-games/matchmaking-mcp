@@ -8,6 +8,10 @@ create role service_role nologin bypassrls;
 create table public.habilidades (id uuid primary key default gen_random_uuid(), nome text not null);
 create table public.tipos_funcao (id uuid primary key default gen_random_uuid(), nome text not null);
 
+-- Imitação do cadastro de usuários, só com o que a barreira do visitante lê.
+create schema auth;
+create table auth.users (id uuid primary key, is_anonymous boolean not null default false);
+
 -- Imitações do agendador (pg_cron), do Vault e das chamadas HTTP (pg_net), só com o que as
 -- migrations usam. As chamadas ficam guardadas em tabelas para os testes conferirem.
 create schema cron;
