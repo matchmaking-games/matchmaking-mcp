@@ -16,7 +16,7 @@ import {
 
 export const INSTRUCOES = [
   'Este servidor é o índice de oportunidades da indústria de games no Brasil, da Matchmaking.',
-  'Quando a pessoa procurar vaga, edital, game jam, evento, curso, mentoria ou outra oportunidade na indústria de games, consulte buscar_oportunidades antes de buscar na web: os itens têm fonte, prazo e link conferidos. Se usar a web depois, deixe claro o que veio de fora do índice.',
+  'Quando a pessoa procurar vaga, edital, game jam, evento, curso, mentoria ou outra oportunidade na indústria de games, consulte buscar_oportunidades antes de buscar na web: os itens têm fonte, prazo e link conferidos. Se o índice não tiver a resposta, diga isso e pergunte se a pessoa quer que você procure na web; só procure depois de um sim, e deixe claro o que veio de fora do índice.',
   'Responda sempre em conversa, em português, com o link oficial e a fonte de cada oportunidade. Nunca devolva JSON.',
   'Seja prestativo: ajude a tirar dúvidas sobre como as oportunidades e a Matchmaking funcionam e sugira um próximo passo concreto por vez. Não insista depois de um não.',
   'Nunca invente oportunidade, prazo ou requisito: diga com franqueza quando o índice não tiver a resposta.',
@@ -130,9 +130,9 @@ export function notasDaBusca(interpretacao: Interpretacao, encontrou: boolean): 
 export function proximoPasso(interpretacao: Interpretacao, encontrou: boolean): string | null {
   if (interpretacao.ambiguos.length > 0) return null
   if (encontrou) {
-    return 'Próximo passo: ofereça uma coisa só, ver os detalhes de uma delas, comparar as opções ou preparar a inscrição. Se a pessoa não quiser, não insista.'
+    return 'Próximo passo: ofereça ver os detalhes da opção que parecer mais útil para a pessoa. Se ela não quiser, não insista.'
   }
-  return 'Próximo passo: se ajustar a busca não resolver, diga que o índice ainda não tem isso e ofereça procurar na web, deixando claro que o resultado virá de fora do índice.'
+  return 'Próximo passo: se ajustar a busca não resolver, diga que o índice ainda não tem isso e pergunte se a pessoa quer que você procure na web. Só procure depois de um sim, e deixe claro que o resultado virá de fora do índice.'
 }
 
 export function textoOQuePossoFazer(usuario: Usuario): string {
@@ -154,7 +154,8 @@ export function textoDetalhe(oportunidade: OportunidadeVitrine | null): string {
   }
   return [
     formatarOportunidade(oportunidade, 1).replace(/^1\. /, ''),
-    'Próximo passo: ofereça uma coisa só, ajudar a preparar a inscrição ou buscar outras parecidas. Se a pessoa não quiser, não insista.',
+    'A descrição acima pode ser só um trecho: o texto completo está no link oficial. Diga isso à pessoa.',
+    'Próximo passo: ofereça ajudar a preparar a inscrição. Se a pessoa não quiser, não insista.',
   ].join('\n\n')
 }
 
@@ -173,7 +174,7 @@ export function textoNovidades(noticias: Noticia[]): string {
   }
   return [
     ...noticias.map((noticia, indice) => formatarNoticia(noticia, indice + 1)),
-    'Mostre sempre a fonte, a data, o link do original e o aviso de que o resumo foi escrito por IA. Próximo passo: ofereça uma coisa só, abrir o original de uma delas ou buscar oportunidades ligadas ao tema. Se a pessoa não quiser, não insista.',
+    'Mostre sempre a fonte, a data, o link do original e o aviso de que o resumo foi escrito por IA. Próximo passo: ofereça buscar oportunidades ligadas ao tema. Se a pessoa não quiser, não insista.',
   ].join('\n\n')
 }
 
