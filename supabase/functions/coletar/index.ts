@@ -131,11 +131,15 @@ Deno.serve(async (req) => {
         }
 
         let encerradas = 0
+        let reabertas = 0
         if (leitor.listaCompleta) {
           // Linha com defeito ainda está na fonte: a oportunidade que já existia não é fechada por isso.
           const links = itens.flatMap((item) => (item.candidato ? [item.candidato.link_oficial] : item.problema ? [item.id_externo] : []))
           const [linha] = await sql`select oportunidades.encerrar_ausentes(${fonte.fonte_id}, ${links}) as encerradas`
           encerradas = linha.encerradas
+          // Quem saiu da fonte e voltou idêntico não passa de novo pelo portão: volta aqui.
+          const [voltaram] = await sql`select oportunidades.reabrir_voltaram(${fonte.fonte_id}, ${links}) as reabertas`
+          reabertas = voltaram.reabertas
         }
 
         // Itens sem prazo que continuam numa fonte de lista inteira ganham de novo o prazo de conferência.
@@ -152,7 +156,7 @@ Deno.serve(async (req) => {
         }
 
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, null, ${itens.length}, ${novos})`
-        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas, renovadas, noticias })
+        leituras.push({ fonte: fonte.fonte_id, lidos: itens.length, novos, encerradas, reabertas, renovadas, noticias })
       } catch (erro) {
         const mensagem = erro instanceof Error ? erro.message : String(erro)
         await sql`select oportunidades.registrar_fim_leitura(${fonte.leitura_id}, ${mensagem})`
