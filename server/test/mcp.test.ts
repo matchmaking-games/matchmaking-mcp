@@ -239,6 +239,30 @@ describe('ferramentas', () => {
   })
 })
 
+describe('filtros de público e prazo', () => {
+  it('repassa os dois filtros para a busca', async () => {
+    const consultas: FiltrosVitrine[] = []
+    await tratarRequisicaoMcp(
+      requisicao(chamarFerramenta('buscar_oportunidades', { publico: 'empresa', prazo_em_dias: 30 }), 'valido'),
+      dependencias(visitante, consultas),
+    )
+    expect(consultas[0]).toMatchObject({ publico: 'empresa', prazoEmDias: 30 })
+  })
+
+  it.each([
+    ['público fora da lista', { publico: 'todo mundo' }],
+    ['prazo negativo', { prazo_em_dias: -1 }],
+    ['prazo longo demais', { prazo_em_dias: 1000 }],
+  ])('recusa %s', async (_caso, argumentos) => {
+    const consultas: FiltrosVitrine[] = []
+    const resposta = await lerJsonRpc(
+      await tratarRequisicaoMcp(requisicao(chamarFerramenta('buscar_oportunidades', argumentos), 'valido'), dependencias(visitante, consultas)),
+    )
+    expect(resposta.error !== undefined || resposta.result?.isError === true).toBe(true)
+    expect(consultas).toEqual([])
+  })
+})
+
 describe('ver_oportunidade', () => {
   it('mostra os detalhes, com link, fonte, nível e um próximo passo', async () => {
     const resposta = await lerJsonRpc(
