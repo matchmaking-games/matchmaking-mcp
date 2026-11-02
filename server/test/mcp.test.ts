@@ -318,6 +318,7 @@ describe('ver_oportunidade', () => {
     expect(texto).toContain('Link oficial: https://matchmaking.games')
     expect(texto).toContain('Fonte: Exemplos da Matchmaking')
     expect(texto).toContain('Nível: junior')
+    expect(texto).toContain('o texto completo está no link oficial')
     expect(texto).toContain('Próximo passo:')
   })
 
