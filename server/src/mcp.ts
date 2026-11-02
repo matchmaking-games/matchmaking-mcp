@@ -2,15 +2,11 @@
 // Sem sessão guardada no servidor: cada chamada é atendida do zero (cabe na Vercel).
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { extrairToken, type VerificarToken } from './autenticacao.js'
-import { criarServidorMcp } from './ferramentas.js'
+import { criarServidorMcp, type DependenciasDasFerramentas } from './ferramentas.js'
 import { urlDoRecurso, urlDosMetadados } from './metadados.js'
-import type { RegistrarUso } from './uso.js'
-import type { ConsultarVitrine } from './vitrine.js'
 
-export interface DependenciasMcp {
+export interface DependenciasMcp extends DependenciasDasFerramentas {
   verificarToken: VerificarToken
-  consultarVitrine: ConsultarVitrine
-  registrarUso: RegistrarUso
 }
 
 export const CABECALHOS_CORS: Record<string, string> = {
@@ -63,7 +59,7 @@ export async function tratarRequisicaoMcp(request: Request, dependencias: Depend
     return respostaJson(405, { error: 'method_not_allowed' }, { Allow: 'POST, OPTIONS' })
   }
 
-  const servidor = criarServidorMcp(usuario, token, dependencias.consultarVitrine, dependencias.registrarUso)
+  const servidor = criarServidorMcp(usuario, token, dependencias)
   const transporte = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
   await servidor.connect(transporte)
   try {
