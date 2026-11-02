@@ -63,7 +63,7 @@ export function criarVerificadorGemini(opcoes: { chave: string; modelo: string; 
               `Oportunidade: ${entrada.titulo}`,
               entrada.descricao ? `Descrição: ${entrada.descricao}` : '',
               `Link: ${entrada.link}`,
-              `<pagina>\n${entrada.texto}\n</pagina>`,
+              `<pagina>\n${entrada.texto.replaceAll('</pagina>', '')}\n</pagina>`,
             ].filter(Boolean).join('\n'),
           }],
         }],
