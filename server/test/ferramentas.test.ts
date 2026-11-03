@@ -95,3 +95,11 @@ describe('data da conferência', () => {
     expect(formatarOportunidade({ ...evento, conferida_em: null }, 1)).not.toContain('conferido')
   })
 })
+
+describe('vaga em destaque', () => {
+  it('mostra o selo só quando a vaga é paga', () => {
+    expect(formatarOportunidade({ ...evento, destaque: true }, 1)).toContain('Vaga em destaque: anúncio pago')
+    expect(formatarOportunidade({ ...evento, destaque: false }, 1)).not.toContain('destaque')
+    expect(formatarOportunidade(evento, 1)).not.toContain('destaque')
+  })
+})

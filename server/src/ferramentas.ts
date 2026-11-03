@@ -84,6 +84,7 @@ export function formatarOportunidade(oportunidade: OportunidadeVitrine, posicao:
     `   Tipo: ${NOMES_DOS_TIPOS[oportunidade.tipo]} · Região: ${descreverRegiao(oportunidade)} · Quem pode participar: ${NOMES_DO_PUBLICO[oportunidade.publico]}`,
     `   ${data} · Fonte: ${oportunidade.fonte}`,
   ]
+  if (oportunidade.destaque) linhas.push('   Vaga em destaque: anúncio pago no site da Matchmaking. Diga isso à pessoa.')
   if (oportunidade.niveis?.length) linhas.push(`   Nível: ${oportunidade.niveis.join(', ')}`)
   if (oportunidade.valor) linhas.push(`   Valor: ${oportunidade.valor}`)
   if (oportunidade.publico_especifico) linhas.push(`   Público: ${oportunidade.publico_especifico}`)

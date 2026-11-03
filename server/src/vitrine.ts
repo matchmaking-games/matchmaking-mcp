@@ -20,6 +20,7 @@ export const oportunidadeVitrineSchema = z.object({
   niveis: z.array(z.string()).nullish(),
   fonte: z.string(),
   conferida_em: z.string().nullish(),
+  destaque: z.boolean().nullish(),
 })
 
 export type OportunidadeVitrine = z.infer<typeof oportunidadeVitrineSchema>
