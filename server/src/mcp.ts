@@ -3,7 +3,7 @@
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { extrairToken, type VerificarToken } from './autenticacao.js'
 import { criarServidorMcp, type DependenciasDasFerramentas } from './ferramentas.js'
-import { urlDoRecurso, urlDosMetadados } from './metadados.js'
+import { ESCOPOS, urlDoRecurso, urlDosMetadados } from './metadados.js'
 
 export interface DependenciasMcp extends DependenciasDasFerramentas {
   verificarToken: VerificarToken
@@ -33,7 +33,7 @@ function respostaJson(status: number, corpo: unknown, cabecalhos: Record<string,
 
 // 401 com o endereço dos metadados: é assim que o assistente descobre onde a pessoa entra.
 export function respostaNaoAutorizado(request: Request, tokenInvalido: boolean): Response {
-  const partes = [`resource_metadata="${urlDosMetadados(request)}"`]
+  const partes = [`resource_metadata="${urlDosMetadados(request)}"`, `scope="${ESCOPOS.join(' ')}"`]
   if (tokenInvalido) partes.push('error="invalid_token"', 'error_description="Acesso expirado ou invalido"')
   return respostaJson(
     401,

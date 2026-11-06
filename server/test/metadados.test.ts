@@ -11,6 +11,7 @@ describe('metadados do recurso protegido', () => {
       resource: 'https://mcp-dev.matchmaking.games/mcp',
       authorization_servers: ['https://exemplo.supabase.co/auth/v1'],
       bearer_methods_supported: ['header'],
+      scopes_supported: ['openid', 'email', 'profile', 'offline_access'],
     })
   })
 

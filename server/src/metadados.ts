@@ -4,6 +4,11 @@ import { emissorDoSupabase, type Configuracao } from './config.js'
 export const CAMINHO_MCP = '/mcp'
 export const CAMINHO_METADADOS = '/.well-known/oauth-protected-resource'
 
+// Permissões que o assistente deve pedir. Sem 'phone': o MCP não usa telefone. Sem esta lista, o assistente
+// pede tudo o que o Supabase oferece. Ordem de escolha na especificação do MCP:
+// https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#scope-selection-strategy
+export const ESCOPOS = ['openid', 'email', 'profile', 'offline_access']
+
 // Endereço público pelo qual o assistente chegou ao servidor.
 export function origemPublica(request: Request): string {
   const url = new URL(request.url)
@@ -26,6 +31,7 @@ export function metadadosDoRecurso(request: Request, config: Configuracao) {
     resource: urlDoRecurso(request),
     authorization_servers: [emissorDoSupabase(config)],
     bearer_methods_supported: ['header'],
+    scopes_supported: ESCOPOS,
     resource_name: 'Matchmaking',
     resource_documentation: 'https://github.com/matchmaking-games/matchmaking-mcp',
   }
