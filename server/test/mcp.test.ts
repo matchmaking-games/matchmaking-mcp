@@ -113,7 +113,7 @@ describe('acesso ao /mcp', () => {
 
     expect(resposta.status).toBe(401)
     expect(resposta.headers.get('www-authenticate')).toBe(
-      'Bearer resource_metadata="https://mcp-dev.matchmaking.games/.well-known/oauth-protected-resource"',
+      'Bearer resource_metadata="https://mcp-dev.matchmaking.games/.well-known/oauth-protected-resource", scope="openid email profile offline_access"',
     )
     expect(resposta.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate')
   })
